@@ -1,0 +1,1042 @@
+import { Meeting } from '../types';
+
+export const seededMeetings: Meeting[] = [
+  {
+    id: 'meeting-arch-q4',
+    title: 'Q4 Core Architecture & Distributed Cache Strategy',
+    category: 'architecture',
+    date: '2026-09-29T14:00:00Z',
+    durationMinutes: 58,
+    status: 'completed',
+    location: 'Zoom (Room Alpha)',
+    preview: 'Agreed to adopt Redis Cluster with Raft consensus for the session tier; rejected write-behind caching due to data loss risk.',
+    participants: [
+      { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
+      { id: 'u2', name: 'Marcus Vance', email: 'marcus.v@fanthom.ai', role: 'Principal Backend Engineer', avatarColor: '#10b981' },
+      { id: 'u3', name: 'Sarah Lin', email: 'sarah.lin@fanthom.ai', role: 'VP of Engineering', avatarColor: '#8b5cf6' },
+      { id: 'u4', name: 'Dave Kowalski', email: 'dave.k@fanthom.ai', role: 'SRE Infrastructure Lead', avatarColor: '#f59e0b' },
+      { id: 'u5', name: 'Elena Rostova', email: 'elena.r@fanthom.ai', role: 'Data Platform Lead', avatarColor: '#ec4899' },
+      { id: 'u6', name: 'James Thornton', email: 'james.t@fanthom.ai', role: 'Frontend Architecture Lead', avatarColor: '#06b6d4' },
+      { id: 'u7', name: 'Rachel Chen', email: 'rachel.c@fanthom.ai', role: 'Director of Product', avatarColor: '#6366f1' },
+      { id: 'u8', name: 'Tom Becker', email: 'tom.b@fanthom.ai', role: 'Security Architect', avatarColor: '#ef4444' }
+    ],
+    transcript: [
+      {
+        id: 't1',
+        speakerId: 'u1',
+        speakerName: 'Pravalika Reddy',
+        startTime: 0,
+        endTime: 24,
+        text: "Thanks everyone for dialing into the Q4 core architecture sync. Today we need a definitive decision on our distributed caching tier. Our current Memcached cluster is hitting hot-shard limits during morning spikes.",
+        sentiment: 'neutral'
+      },
+      {
+        id: 't2',
+        speakerId: 'u2',
+        speakerName: 'Marcus Vance',
+        startTime: 25,
+        endTime: 62,
+        text: "Right. The primary issue is p99 latency climbing past 450 milliseconds whenever three enterprise clients sync their calendar indexes simultaneously. I evaluated two proposals: upgrading our Memcached topology with consistent hashing, versus migrating to a multi-node Redis cluster with active read-replicas.",
+        sentiment: 'neutral'
+      },
+      {
+        id: 't3',
+        speakerId: 'u4',
+        speakerName: 'Dave Kowalski',
+        startTime: 63,
+        endTime: 104,
+        text: "From an SRE perspective, operating standalone Memcached instances across three AWS availability zones has caused intermittent split-brain scenarios when VPC peering drops. Redis 7 with failover automation would cut our on-call pages by at least forty percent.",
+        sentiment: 'positive',
+        highlighted: true,
+        highlightTag: 'Infra Reliability'
+      },
+      {
+        id: 't4',
+        speakerId: 'u8',
+        speakerName: 'Tom Becker',
+        startTime: 105,
+        endTime: 142,
+        text: "Before we get too excited about Redis, what is our encryption in transit policy? We handle SOC2 Type II and HIPAA data for our healthcare clients. We cannot allow unencrypted TLS payloads between cache nodes.",
+        sentiment: 'concern'
+      },
+      {
+        id: 't5',
+        speakerId: 'u1',
+        speakerName: 'Pravalika Reddy',
+        startTime: 143,
+        endTime: 185,
+        text: "Good call, Tom. The architecture RFC mandates mutual TLS on port 6380 with automated Let's Encrypt certificate rotation via HashiCorp Vault. In addition, sensitive meeting tokens will be encrypted at the application layer with AES-256-GCM before touching the cache.",
+        sentiment: 'positive'
+      },
+      {
+        id: 't6',
+        speakerId: 'u5',
+        speakerName: 'Elena Rostova',
+        startTime: 186,
+        endTime: 230,
+        text: "How are we invalidating stale meeting metadata? If an organizer deletes a recording, GDPR mandates immediate purging. If we use write-behind caching, there is a risk of a 30-second window where deleted recordings could still be served from cache.",
+        sentiment: 'concern'
+      },
+      {
+        id: 't7',
+        speakerId: 'u2',
+        speakerName: 'Marcus Vance',
+        startTime: 231,
+        endTime: 275,
+        text: "That is why I recommend strictly write-through caching with dual-write to PostgreSQL, backed by a Kafka dead-letter queue for retries. If the cache invalidation event fails, the replica automatically flags the key as expired.",
+        sentiment: 'positive',
+        highlighted: true,
+        highlightTag: 'Data Integrity'
+      },
+      {
+        id: 't8',
+        speakerId: 'u3',
+        speakerName: 'Sarah Lin',
+        startTime: 276,
+        endTime: 318,
+        text: "What does the migration path look like for live users? Can we do a zero-downtime blue-green cutover, or will we need a scheduled maintenance window over a weekend?",
+        sentiment: 'neutral'
+      },
+      {
+        id: 't9',
+        speakerId: 'u1',
+        speakerName: 'Pravalika Reddy',
+        startTime: 319,
+        endTime: 368,
+        text: "We can do a full shadow-read and dual-write rollout over two sprints. In sprint 1, we deploy Redis in shadow mode and compare cache hits against Memcached. In sprint 2, we shift 10% of tenant traffic, monitor p99 metrics, and ramp up to 100% without any user downtime.",
+        sentiment: 'positive',
+        highlighted: true,
+        highlightTag: 'Rollout Plan'
+      },
+      {
+        id: 't10',
+        speakerId: 'u7',
+        speakerName: 'Rachel Chen',
+        startTime: 369,
+        endTime: 405,
+        text: "That timeline aligns well with the enterprise launch we have scheduled for late October. Sales has three Fortune 500 pilots waiting on our 99.99% uptime commitment.",
+        sentiment: 'positive'
+      },
+      {
+        id: 't11',
+        speakerId: 'u6',
+        speakerName: 'James Thornton',
+        startTime: 406,
+        endTime: 448,
+        text: "On the frontend, if cache responses drop to under 50ms, we can remove the optimistic retry debouncing in the meeting player, which immediately simplifies the state machine in React.",
+        sentiment: 'positive'
+      },
+      {
+        id: 't12',
+        speakerId: 'u1',
+        speakerName: 'Pravalika Reddy',
+        startTime: 449,
+        endTime: 495,
+        text: "Sounds like we have clear consensus. Decision: We approve RFC-204 for the Redis Cluster with mutual TLS and write-through invalidation. Marcus will lead the backend implementation, Dave handles the Terraform infra, and Tom reviews security certificates.",
+        sentiment: 'positive'
+      }
+    ],
+    summaries: {
+      general: {
+        overview: 'The architecture team approved RFC-204 to replace the legacy Memcached cluster with a fault-tolerant Redis Cluster across 3 AWS Availability Zones. The migration will be conducted using shadow-reads and dual-writes over two sprints to guarantee zero customer downtime.',
+        keyTopics: [
+          {
+            title: 'Latency Spikes & Scalability Limits',
+            notes: [
+              'Memcached hot-sharding caused p99 response times to exceed 450ms during peak enterprise calendar syncs.',
+              'Cross-AZ network blips resulted in intermittent split-brain states.'
+            ]
+          },
+          {
+            title: 'Security, Compliance & Invalidation',
+            notes: [
+              'Mandatory mutual TLS on port 6380 with automatic Vault certificate rotation.',
+              'Application-level AES-256-GCM encryption for meeting access tokens before caching.',
+              'Rejected write-behind caching in favor of strict write-through with PostgreSQL to enforce immediate GDPR deletion guarantees.'
+            ]
+          },
+          {
+            title: 'Phased Zero-Downtime Rollout',
+            notes: [
+              'Sprint 1: Deploy Redis in shadow-read mode and validate parity.',
+              'Sprint 2: Ramp tenant traffic from 10% to 100% while observing Datadog p99 latency.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Approved RFC-204: Transition from Memcached to Redis 7 Cluster.',
+          'Adopted write-through cache invalidation with dual-write to PostgreSQL.',
+          'Mandated mutual TLS with HashiCorp Vault certificate auto-rotation.'
+        ],
+        nextSteps: [
+          'Marcus to finalize Redis connection pooling library by Friday.',
+          'Dave to provision staging Redis cluster in us-west-2 via Terraform.',
+          'Tom to sign off on mTLS cipher suites and compliance posture.'
+        ]
+      },
+      sales: {
+        overview: 'Architecture upgrade specifically addresses enterprise readiness requirements, directly unlocking three Fortune 500 sales prospects waiting on 99.99% SLA guarantees.',
+        keyTopics: [
+          {
+            title: 'Customer SLA Impact',
+            notes: [
+              'Reduces p99 latency from 450ms down to sub-50ms.',
+              'Guarantees 99.99% availability during simultaneous high-volume calendar synchronizations.'
+            ]
+          },
+          {
+            title: 'Security Certifications',
+            notes: [
+              'Full compliance with enterprise security requirements (SOC2 Type II, HIPAA, GDPR).',
+              'End-to-end data encryption in transit and at rest.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Infrastructure upgrade committed for completion ahead of late October customer pilots.'
+        ],
+        nextSteps: [
+          'Rachel to update Enterprise Sales collateral with new sub-50ms sync latency figures.'
+        ]
+      },
+      project: {
+        overview: 'Sprint planning and milestone allocation for RFC-204 rollout across backend, infra, security, and web client teams.',
+        keyTopics: [
+          {
+            title: 'Sprint 24.1 (Oct 1 - Oct 14)',
+            notes: [
+              'Terraform staging cluster provisioning (Dave Kowalski).',
+              'Client-side connection pooling & dual-write shadow implementation (Marcus Vance).'
+            ]
+          },
+          {
+            title: 'Sprint 24.2 (Oct 15 - Oct 28)',
+            notes: [
+              '10% canary traffic rollout and Datadog p99 validation.',
+              'Frontend meeting player simplification (James Thornton).'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'No scheduled maintenance windows; zero-downtime blue/green deployment strategy approved.'
+        ],
+        nextSteps: [
+          'Create Jira epic ARCH-204 with 6 subtasks linked to engineering leads.'
+        ]
+      },
+      'one-on-one': {
+        overview: 'Architectural leadership review: Pravalika successfully navigated competing stakeholder concerns from Security, SRE, and Product into a unified roadmap.',
+        keyTopics: [
+          {
+            title: 'Technical Leadership',
+            notes: [
+              'Pravalika synthesized complex caching tradeoffs and resolved GDPR compliance concerns proactively.',
+              'Cross-team consensus achieved smoothly between 8 senior engineers and directors.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Pravalika will serve as executive sponsor for the Q4 infrastructure tier migration.'
+        ],
+        nextSteps: [
+          'Schedule bi-weekly status sync between Sarah Lin and Pravalika to monitor rollout milestones.'
+        ]
+      }
+    },
+    actionItems: [
+      {
+        id: 'act-1',
+        description: 'Complete Redis cluster connection pooling PR with circuit-breaker fallback',
+        assigneeId: 'u2',
+        assigneeName: 'Marcus Vance',
+        dueDate: 'Oct 3, 2026',
+        completed: false,
+        timestampSeconds: 231,
+        meetingId: 'meeting-arch-q4'
+      },
+      {
+        id: 'act-2',
+        description: 'Provision staging Redis cluster across 3 availability zones using Terraform',
+        assigneeId: 'u4',
+        assigneeName: 'Dave Kowalski',
+        dueDate: 'Oct 6, 2026',
+        completed: false,
+        timestampSeconds: 63,
+        meetingId: 'meeting-arch-q4'
+      },
+      {
+        id: 'act-3',
+        description: 'Review and approve mutual TLS cipher suites for HashiCorp Vault certificate auto-rotation',
+        assigneeId: 'u8',
+        assigneeName: 'Tom Becker',
+        dueDate: 'Oct 5, 2026',
+        completed: true,
+        timestampSeconds: 143,
+        meetingId: 'meeting-arch-q4'
+      },
+      {
+        id: 'act-4',
+        description: 'Simplify web client playback state machine once latency drops under 50ms',
+        assigneeId: 'u6',
+        assigneeName: 'James Thornton',
+        dueDate: 'Oct 14, 2026',
+        completed: false,
+        timestampSeconds: 406,
+        meetingId: 'meeting-arch-q4'
+      }
+    ],
+    decisions: [
+      {
+        id: 'dec-1',
+        title: 'Approve RFC-204: Redis 7 Cluster Migration',
+        description: 'Replace Memcached with multi-node Redis cluster with automatic failover to eliminate hot-sharding bottlenecks.',
+        timestampSeconds: 449,
+        decidedBy: 'Pravalika Reddy & Sarah Lin',
+        category: 'architecture'
+      },
+      {
+        id: 'dec-2',
+        title: 'Mandate Write-Through Invalidation Policy',
+        description: 'Rejected write-behind caching to eliminate GDPR deletion latency risks and protect data consistency.',
+        timestampSeconds: 231,
+        decidedBy: 'Marcus Vance & Elena Rostova',
+        category: 'architecture'
+      },
+      {
+        id: 'dec-3',
+        title: 'Enforce Dual-Write Shadow Rollout Strategy',
+        description: 'Deploy shadow reads and phased 10% canary traffic ramp over two sprints without user-facing maintenance windows.',
+        timestampSeconds: 319,
+        decidedBy: 'Pravalika Reddy',
+        category: 'timeline'
+      }
+    ],
+    highlights: [
+      {
+        id: 'hl-1',
+        title: 'SRE Reliability Analysis',
+        excerpt: 'Redis 7 with failover automation would cut our on-call pages by at least forty percent.',
+        speakerName: 'Dave Kowalski',
+        timestampSeconds: 63,
+        durationSeconds: 41,
+        category: 'breakthrough',
+        shareUrl: 'https://fanthom.ai/m/meeting-arch-q4?t=63'
+      },
+      {
+        id: 'hl-2',
+        title: 'Write-Through vs Write-Behind Decision',
+        excerpt: 'I recommend strictly write-through caching with dual-write to PostgreSQL, backed by a Kafka dead-letter queue.',
+        speakerName: 'Marcus Vance',
+        timestampSeconds: 231,
+        durationSeconds: 44,
+        category: 'decision',
+        shareUrl: 'https://fanthom.ai/m/meeting-arch-q4?t=231'
+      },
+      {
+        id: 'hl-3',
+        title: 'Zero Downtime Shadow Deployment',
+        excerpt: 'We can do a full shadow-read and dual-write rollout over two sprints without any user downtime.',
+        speakerName: 'Pravalika Reddy',
+        timestampSeconds: 319,
+        durationSeconds: 49,
+        category: 'decision',
+        shareUrl: 'https://fanthom.ai/m/meeting-arch-q4?t=319'
+      }
+    ],
+    brief: {
+      previousMeetingDate: 'Sept 15, 2026',
+      previousDecisions: [
+        'Agreed that Memcached horizontal scaling was reaching physical diminishing returns.',
+        'Commissioned Marcus Vance to write RFC-204.'
+      ],
+      openActionItems: [
+        'Marcus: Benchmark Redis 7 throughput on c6i.2xlarge instances (Completed).',
+        'Dave: Map cross-AZ latency overhead (Completed).'
+      ],
+      suggestedTalkingPoints: [
+        'Review AWS cost impact of Redis Cluster vs Memcached instances.',
+        'Align on client-side retry budgets to prevent thundering herd on cold cache.'
+      ],
+      historicalContext: 'Core API traffic surged 320% year-over-year following enterprise expansion, causing database thread exhaustion during morning synchronization spikes.'
+    },
+    stats: {
+      wordsSpoken: 1240,
+      speakingRatio: {
+        u1: 32,
+        u2: 24,
+        u3: 10,
+        u4: 12,
+        u5: 8,
+        u6: 6,
+        u7: 4,
+        u8: 4
+      },
+      sentimentScore: 88
+    }
+  },
+  {
+    id: 'meeting-sales-acme',
+    title: 'Acme Corp — Enterprise Contract & Custom SLA Review',
+    category: 'sales',
+    date: '2026-09-28T16:30:00Z',
+    durationMinutes: 35,
+    status: 'completed',
+    location: 'Google Meet',
+    preview: 'Negotiated 99.99% custom SLA terms, agreed on 500-seat volume tier at $28/seat/mo, and committed to HIPAA BAA execution.',
+    participants: [
+      { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Solutions Architect', avatarColor: '#3b82f6', isHost: true },
+      { id: 'u9', name: 'Alex Morgan', email: 'alex.m@fanthom.ai', role: 'Enterprise Account Executive', avatarColor: '#f97316' },
+      { id: 'u10', name: 'Jordan Reed', email: 'jreed@acmecorp.com', role: 'VP of Procurement, Acme Corp', avatarColor: '#84cc16' },
+      { id: 'u11', name: 'Priya Sharma', email: 'psharma@acmecorp.com', role: 'Director of IT Security, Acme Corp', avatarColor: '#a855f7' }
+    ],
+    transcript: [
+      {
+        id: 'st1',
+        speakerId: 'u9',
+        speakerName: 'Alex Morgan',
+        startTime: 0,
+        endTime: 22,
+        text: "Thanks Jordan and Priya for taking the time today. We wanted to walk through the redlines on the enterprise agreement and answer any technical questions on our security infrastructure.",
+        sentiment: 'neutral'
+      },
+      {
+        id: 'st2',
+        speakerId: 'u10',
+        speakerName: 'Jordan Reed',
+        startTime: 23,
+        endTime: 58,
+        text: "Thanks Alex. Our chief concern is the financial penalty clause on the 99.99% SLA. If our 500 customer success managers cannot record critical quarterly business reviews, we need service credits calculated hourly rather than monthly.",
+        sentiment: 'concern',
+        highlighted: true,
+        highlightTag: 'Pricing Objection'
+      },
+      {
+        id: 'st3',
+        speakerId: 'u1',
+        speakerName: 'Pravalika Reddy',
+        startTime: 59,
+        endTime: 102,
+        text: "Jordan, that is completely reasonable. Our active-active multi-region deployment across US-East and US-West maintains a sub-second health-check failover. We are confident agreeing to hourly service credit calculations up to 30% of monthly contract value.",
+        sentiment: 'positive'
+      },
+      {
+        id: 'st4',
+        speakerId: 'u11',
+        speakerName: 'Priya Sharma',
+        startTime: 103,
+        endTime: 145,
+        text: "That addresses our operational reliability risk. Regarding our security audit: can you confirm that audio and transcript recordings are encrypted using tenant-specific KMS keys?",
+        sentiment: 'neutral'
+      },
+      {
+        id: 'st5',
+        speakerId: 'u1',
+        speakerName: 'Pravalika Reddy',
+        startTime: 146,
+        endTime: 190,
+        text: "Yes, Priya. In our Enterprise tier, we support Customer Managed Encryption Keys (CMEK) via AWS KMS or HashiCorp Vault. If your security team revokes the key in your KMS console, all data immediately becomes unreadable by our systems.",
+        sentiment: 'positive',
+        highlighted: true,
+        highlightTag: 'CMEK Security'
+      },
+      {
+        id: 'st6',
+        speakerId: 'u10',
+        speakerName: 'Jordan Reed',
+        startTime: 191,
+        endTime: 228,
+        text: "Excellent. If we can finalize the pricing at $28 per user per month for the initial 500 seats on a two-year commitment, we are ready to sign before the end of the quarter.",
+        sentiment: 'positive',
+        highlighted: true,
+        highlightTag: 'Deal Terms'
+      }
+    ],
+    summaries: {
+      general: {
+        overview: 'Successful commercial and security negotiation with Acme Corp for 500 enterprise seats. Both parties aligned on hourly SLA service credit penalties and CMEK encryption.',
+        keyTopics: [
+          {
+            title: 'SLA & Reliability Agreement',
+            notes: [
+              'Agreed to 99.99% uptime with hourly service credit penalties capped at 30% monthly recurring revenue.',
+              'Demonstrated active-active multi-region failover between us-east-1 and us-west-2.'
+            ]
+          },
+          {
+            title: 'Security & CMEK Compliance',
+            notes: [
+              'Confirmed support for Customer Managed Encryption Keys (CMEK) via AWS KMS.',
+              'Instant cryptographic wipe upon tenant KMS revocation.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Accepted hourly service credits penalty for SLA breaches.',
+          'Agreed to $28/seat/month on a 500-seat 2-year commitment ($336,000 ARR).'
+        ],
+        nextSteps: [
+          'Alex to issue updated master services agreement with CMEK appendix by Wednesday.',
+          'Jordan Reed to route to Acme Corp legal for signature before Friday.'
+        ]
+      },
+      sales: {
+        overview: 'Deal closing call: 500 enterprise seats secured at $28/seat/mo ($336k ARR, $672k TCV) on a 2-year contract.',
+        keyTopics: [
+          {
+            title: 'Commercial Terms',
+            notes: [
+              'Seats: 500 users initially with expansion rights at same unit price.',
+              'Payment terms: Net-30 annual in advance.'
+            ]
+          },
+          {
+            title: 'Key Buying Triggers',
+            notes: [
+              'CMEK tenant encryption was a non-negotiable blocker resolved by Pravalika.',
+              'Fathom meeting summaries will integrate directly into Acme Corp Salesforce instance.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Closed win pending final signature on updated order form.'
+        ],
+        nextSteps: [
+          'Send signature packet via DocuSign today.'
+        ]
+      },
+      project: {
+        overview: 'Onboarding roadmap for Acme Corp: 500 customer success users to be provisioned by November 1.',
+        keyTopics: [
+          {
+            title: 'Integration Milestones',
+            notes: [
+              'Week 1: AWS KMS CMEK key integration & testing.',
+              'Week 2: Okta SAML 2.0 Single Sign-On configuration.',
+              'Week 3: CSM team training and Zoom app rollout.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Dedicated enterprise onboarding engineer assigned to Acme Corp account.'
+        ],
+        nextSteps: [
+          'Schedule kickoff call with Priya Sharma for next Tuesday.'
+        ]
+      },
+      'one-on-one': {
+        overview: 'Partner sync between Sales and Architecture on enterprise client technical objection handling.',
+        keyTopics: [
+          {
+            title: 'Sales Engineering Collaboration',
+            notes: [
+              'Pravalikas quick technical clarification on CMEK encryption prevented deal delay.',
+              'Template for hourly SLA penalty language can be reused for upcoming global bank prospects.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Standardize CMEK technical whitepaper for enterprise AE distribution.'
+        ],
+        nextSteps: [
+          'Publish CMEK architecture diagram on internal Notion knowledgebase.'
+        ]
+      }
+    },
+    actionItems: [
+      {
+        id: 'act-sales-1',
+        description: 'Send updated MSA with 99.99% hourly SLA credits and CMEK appendix to Jordan Reed',
+        assigneeId: 'u9',
+        assigneeName: 'Alex Morgan',
+        dueDate: 'Oct 1, 2026',
+        completed: false,
+        timestampSeconds: 191,
+        meetingId: 'meeting-sales-acme'
+      },
+      {
+        id: 'act-sales-2',
+        description: 'Provide AWS KMS policy template and IAM role ARN to Priya Sharma',
+        assigneeId: 'u1',
+        assigneeName: 'Pravalika Reddy',
+        dueDate: 'Oct 2, 2026',
+        completed: false,
+        timestampSeconds: 146,
+        meetingId: 'meeting-sales-acme'
+      }
+    ],
+    decisions: [
+      {
+        id: 'dec-sales-1',
+        title: 'Approve $28/seat/mo on 2-Year Contract',
+        description: 'Closed 500-seat enterprise deal at $28 per user per month with 2-year commitment.',
+        timestampSeconds: 191,
+        decidedBy: 'Jordan Reed & Alex Morgan',
+        category: 'pricing'
+      },
+      {
+        id: 'dec-sales-2',
+        title: 'Enable CMEK KMS Support for Tenant',
+        description: 'Commit to Customer Managed Encryption Keys (CMEK) deployment ahead of production onboarding.',
+        timestampSeconds: 146,
+        decidedBy: 'Pravalika Reddy',
+        category: 'product'
+      }
+    ],
+    highlights: [
+      {
+        id: 'hl-sales-1',
+        title: 'SLA Credit Negotiation',
+        excerpt: 'If our 500 customer success managers cannot record critical QBRs, we need service credits calculated hourly.',
+        speakerName: 'Jordan Reed',
+        timestampSeconds: 23,
+        durationSeconds: 35,
+        category: 'objection',
+        shareUrl: 'https://fanthom.ai/m/meeting-sales-acme?t=23'
+      },
+      {
+        id: 'hl-sales-2',
+        title: 'Deal Terms Finalized',
+        excerpt: 'If we can finalize the pricing at $28 per user per month for the initial 500 seats on a two-year commitment, we are ready to sign.',
+        speakerName: 'Jordan Reed',
+        timestampSeconds: 191,
+        durationSeconds: 37,
+        category: 'decision',
+        shareUrl: 'https://fanthom.ai/m/meeting-sales-acme?t=191'
+      }
+    ],
+    brief: {
+      previousMeetingDate: 'Sept 14, 2026',
+      previousDecisions: [
+        'Acme Corp completed a 14-day technical proof-of-concept with 25 pilot users.',
+        'Achieved 96% positive user sentiment among pilot team.'
+      ],
+      openActionItems: [
+        'Alex Morgan: Deliver SOC2 Type II compliance package (Completed).'
+      ],
+      suggestedTalkingPoints: [
+        'Address procurement terms regarding hourly SLA downtime credits.',
+        'Confirm timeline for CMEK key sharing and enterprise SAML rollout.'
+      ],
+      historicalContext: 'Acme Corp is evaluating replacing their fragmented Zoom AI notetaker with Fanthom AI for centralized meeting records and automated CRM syncing.'
+    },
+    stats: {
+      wordsSpoken: 890,
+      speakingRatio: {
+        u1: 35,
+        u9: 20,
+        u10: 25,
+        u11: 20
+      },
+      sentimentScore: 92
+    }
+  },
+  {
+    id: 'meeting-eng-mobile',
+    title: 'Weekly Mobile App Sprint & Performance Regression',
+    category: 'engineering',
+    date: '2026-09-27T10:00:00Z',
+    durationMinutes: 25,
+    status: 'completed',
+    location: 'Huddle',
+    preview: 'Triaged iOS 18 cold start regression caused by redundant SQLite schema migrations; rolled back prefetch hook to restore 180ms startup.',
+    participants: [
+      { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
+      { id: 'u12', name: 'Carlos Mendez', email: 'carlos.m@fanthom.ai', role: 'Lead iOS Engineer', avatarColor: '#eab308' },
+      { id: 'u13', name: 'Nina Patel', email: 'nina.p@fanthom.ai', role: 'Staff QA Engineer', avatarColor: '#14b8a6' },
+      { id: 'u7', name: 'Rachel Chen', email: 'rachel.c@fanthom.ai', role: 'Director of Product', avatarColor: '#6366f1' }
+    ],
+    transcript: [
+      {
+        id: 'mt1',
+        speakerId: 'u1',
+        speakerName: 'Pravalika Reddy',
+        startTime: 0,
+        endTime: 20,
+        text: "Let's dive right into the iOS crash and latency telemetry. Our Sentry dashboard showed app launch times jumping from 190ms to 840ms after v4.2.1 shipped.",
+        sentiment: 'concern'
+      },
+      {
+        id: 'mt2',
+        speakerId: 'u12',
+        speakerName: 'Carlos Mendez',
+        startTime: 21,
+        endTime: 55,
+        text: "I tracked it down this morning. In v4.2.1, we added an eager SQLite schema check inside AppDelegate before UI rendering. On devices with more than 50 local cached transcripts, the WAL file checkpoint blocks the main run loop.",
+        sentiment: 'neutral',
+        highlighted: true,
+        highlightTag: 'Root Cause'
+      },
+      {
+        id: 'mt3',
+        speakerId: 'u13',
+        speakerName: 'Nina Patel',
+        startTime: 56,
+        endTime: 88,
+        text: "That explains why our clean test simulators were passing QA, but our beta testers with extensive historical data experienced severe launch lag and watchdog timeouts.",
+        sentiment: 'neutral'
+      },
+      {
+        id: 'mt4',
+        speakerId: 'u1',
+        speakerName: 'Pravalika Reddy',
+        startTime: 89,
+        endTime: 125,
+        text: "Let's decouple the schema check from app launch. We can move database integrity checks and WAL checkpointing to a background dispatch queue with a 2-second delay after initial view appearance.",
+        sentiment: 'positive',
+        highlighted: true,
+        highlightTag: 'Fix Strategy'
+      }
+    ],
+    summaries: {
+      general: {
+        overview: 'Identified and remediated an iOS 18 cold start performance regression caused by synchronous SQLite database checks on the main thread during app initialization.',
+        keyTopics: [
+          {
+            title: 'Telemetry & Root Cause Analysis',
+            notes: [
+              'App startup time regressed from 190ms to 840ms on devices with large historical transcript caches.',
+              'Synchronous SQLite WAL checkpointing blocked the main UI thread during AppDelegate launch.'
+            ]
+          },
+          {
+            title: 'Fix & Deployment Plan',
+            notes: [
+              'Move database integrity checks to a background GCD queue.',
+              'Deploy hotfix build v4.2.2 to TestFlight today for QA verification.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Approve background dispatch architecture for all mobile database migrations.',
+          'Release hotfix v4.2.2 immediately.'
+        ],
+        nextSteps: [
+          'Carlos to submit PR with asynchronous database loader by 2 PM.',
+          'Nina to run regression suite on high-density test devices.'
+        ]
+      },
+      sales: {
+        overview: 'Mobile app reliability hotfix ensures smooth mobile recording for executives on the go.',
+        keyTopics: [
+          {
+            title: 'Customer Experience Impact',
+            notes: [
+              'Eliminates app launch freezing for power users with 100+ recorded meetings.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Priority hotfix deployed before customer business hours tomorrow.'
+        ],
+        nextSteps: [
+          'Notify customer support team that fix is in flight.'
+        ]
+      },
+      project: {
+        overview: 'Sprint adjustment: shifting 1 engineering day to deploy hotfix v4.2.2.',
+        keyTopics: [
+          {
+            title: 'Sprint Capacity',
+            notes: [
+              'Carlos will postpone the Apple Watch widget task until Sprint 25 to prioritize the launch regression.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Watch widget deferred by one sprint.'
+        ],
+        nextSteps: [
+          'Update sprint board in Linear.'
+        ]
+      },
+      'one-on-one': {
+        overview: 'Debugging review: Excellent root-cause turnaround by Carlos Mendez.',
+        keyTopics: [
+          {
+            title: 'Engineering Quality',
+            notes: [
+              'Commend Carlos for isolating the WAL checkpoint bottleneck within 3 hours.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Add automated cold-start benchmark with 200 mock transcripts to mobile CI pipeline.'
+        ],
+        nextSteps: [
+          'Setup synthetic database benchmark in GitHub Actions.'
+        ]
+      }
+    },
+    actionItems: [
+      {
+        id: 'act-mob-1',
+        description: 'Move SQLite WAL checkpointing to background queue in AppDelegate.swift',
+        assigneeId: 'u12',
+        assigneeName: 'Carlos Mendez',
+        dueDate: 'Today, 2:00 PM',
+        completed: false,
+        timestampSeconds: 89,
+        meetingId: 'meeting-eng-mobile'
+      },
+      {
+        id: 'act-mob-2',
+        description: 'Execute stress test on iPhone 15 Pro with 250 cached meetings',
+        assigneeId: 'u13',
+        assigneeName: 'Nina Patel',
+        dueDate: 'Today, 5:00 PM',
+        completed: false,
+        timestampSeconds: 56,
+        meetingId: 'meeting-eng-mobile'
+      }
+    ],
+    decisions: [
+      {
+        id: 'dec-mob-1',
+        title: 'Asynchronous Mobile Database Initialization',
+        description: 'Ban synchronous SQLite schema queries on the main thread; enforce async background queue dispatch.',
+        timestampSeconds: 89,
+        decidedBy: 'Pravalika Reddy & Carlos Mendez',
+        category: 'architecture'
+      }
+    ],
+    highlights: [
+      {
+        id: 'hl-mob-1',
+        title: 'Launch Regression Root Cause',
+        excerpt: 'On devices with more than 50 local cached transcripts, the WAL file checkpoint blocks the main run loop.',
+        speakerName: 'Carlos Mendez',
+        timestampSeconds: 21,
+        durationSeconds: 34,
+        category: 'breakthrough',
+        shareUrl: 'https://fanthom.ai/m/meeting-eng-mobile?t=21'
+      }
+    ],
+    brief: {
+      previousMeetingDate: 'Sept 20, 2026',
+      previousDecisions: [
+        'Shipped v4.2.0 featuring offline transcript search.'
+      ],
+      openActionItems: [
+        'Carlos: Integrate offline whisper model for local voice notes (In progress).'
+      ],
+      suggestedTalkingPoints: [
+        'Review Sentry crash rates for v4.2.1.',
+        'Address memory footprint when streaming audio over cellular.'
+      ],
+      historicalContext: 'Mobile app downloads grew 85% this month as distributed field sales representatives adopted mobile recording.'
+    },
+    stats: {
+      wordsSpoken: 450,
+      speakingRatio: {
+        u1: 40,
+        u12: 35,
+        u13: 20,
+        u7: 5
+      },
+      sentimentScore: 78
+    }
+  },
+  {
+    id: 'meeting-1on1-sarah',
+    title: 'Bi-Weekly 1:1: Career Progression & Staff Level Scope',
+    category: 'one-on-one',
+    date: '2026-09-25T11:00:00Z',
+    durationMinutes: 30,
+    status: 'completed',
+    location: '1:1 Private Sync',
+    preview: 'Discussed expanding architectural leadership scope to cover cross-team real-time streaming infrastructure and mentoring mid-level engineers.',
+    participants: [
+      { id: 'u3', name: 'Sarah Lin', email: 'sarah.lin@fanthom.ai', role: 'VP of Engineering', avatarColor: '#8b5cf6', isHost: true },
+      { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6' }
+    ],
+    transcript: [
+      {
+        id: 'ot1',
+        speakerId: 'u3',
+        speakerName: 'Sarah Lin',
+        startTime: 0,
+        endTime: 28,
+        text: "Pravalika, really glad we have this time today. First off, phenomenal job steering the distributed caching RFC through the architecture guild. The clarity in your technical documentation received praise from Marcus and Dave alike.",
+        sentiment: 'positive'
+      },
+      {
+        id: 'ot2',
+        speakerId: 'u1',
+        speakerName: 'Pravalika Reddy',
+        startTime: 29,
+        endTime: 64,
+        text: "Thank you Sarah! I really enjoyed working through the tradeoffs with Elena and Tom on the GDPR and mutual TLS requirements. I feel like we got everyone aligned around the right long-term architecture rather than a quick patch.",
+        sentiment: 'positive'
+      },
+      {
+        id: 'ot3',
+        speakerId: 'u3',
+        speakerName: 'Sarah Lin',
+        startTime: 65,
+        endTime: 105,
+        text: "Looking forward to next half, I want to formally sponsor you for Principal Architect. To solidify the promotion packet, I'd like you to take ownership of our cross-team streaming ingestion pipeline and mentor Marcus on multi-region reliability.",
+        sentiment: 'positive',
+        highlighted: true,
+        highlightTag: 'Career Milestone'
+      }
+    ],
+    summaries: {
+      general: {
+        overview: '1:1 sync between Sarah Lin and Pravalika Reddy reviewing performance and mapping out the promotion trajectory toward Principal Architect.',
+        keyTopics: [
+          {
+            title: 'Guild Leadership Feedback',
+            notes: [
+              'High praise for RFC-204 consensus-building and thorough documentation.',
+              'Commended for cross-functional diplomacy between Security and SRE teams.'
+            ]
+          },
+          {
+            title: 'Principal Promotion Roadmap',
+            notes: [
+              'Expand scope to lead the real-time audio/video streaming ingestion platform.',
+              'Formalize technical mentorship with backend senior engineers.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Sarah Lin to submit Principal Architect promotion packet for Q1 executive review.'
+        ],
+        nextSteps: [
+          'Pravalika to draft H1 real-time streaming charter by end of next week.'
+        ]
+      },
+      sales: {
+        overview: 'Internal leadership and career development sync.',
+        keyTopics: [{ title: 'Internal', notes: ['Not applicable to external sales workflows.'] }],
+        decisionsSummary: ['Internal promotion roadmap established.'],
+        nextSteps: ['Complete internal technical charter.']
+      },
+      project: {
+        overview: 'Roadmap alignment on H1 engineering priorities.',
+        keyTopics: [
+          {
+            title: 'H1 Architectural Initiatives',
+            notes: ['Streaming ingestion pipeline will become the top Q1 infrastructure initiative.']
+          }
+        ],
+        decisionsSummary: ['Prioritize streaming charter draft.'],
+        nextSteps: ['Review draft with VP Eng.']
+      },
+      'one-on-one': {
+        overview: 'Dedicated career development review. Pravalika is on track for Principal Architect nomination with broad executive endorsement.',
+        keyTopics: [
+          {
+            title: 'Scope Expansion',
+            notes: [
+              'Lead cross-cutting streaming protocol design (WebRTC -> Kafka -> Chunked Storage).',
+              'Sponsor engineering excellence across distributed systems guild.'
+            ]
+          }
+        ],
+        decisionsSummary: [
+          'Promotion packet submission confirmed for Q1 cycle.'
+        ],
+        nextSteps: [
+          'Schedule bi-weekly leadership mentoring sessions.'
+        ]
+      }
+    },
+    actionItems: [
+      {
+        id: 'act-1on1-1',
+        description: 'Draft technical charter for H1 real-time streaming audio ingestion pipeline',
+        assigneeId: 'u1',
+        assigneeName: 'Pravalika Reddy',
+        dueDate: 'Oct 10, 2026',
+        completed: false,
+        timestampSeconds: 65,
+        meetingId: 'meeting-1on1-sarah'
+      }
+    ],
+    decisions: [
+      {
+        id: 'dec-1on1-1',
+        title: 'Nomination for Principal Architect Role',
+        description: 'Sarah Lin confirmed sponsorship for Pravalikas promotion packet in Q1 cycle.',
+        timestampSeconds: 65,
+        decidedBy: 'Sarah Lin',
+        category: 'process'
+      }
+    ],
+    highlights: [
+      {
+        id: 'hl-1on1-1',
+        title: 'Promotion Sponsorship',
+        excerpt: 'I want to formally sponsor you for Principal Architect. I would like you to take ownership of our streaming pipeline.',
+        speakerName: 'Sarah Lin',
+        timestampSeconds: 65,
+        durationSeconds: 40,
+        category: 'breakthrough',
+        shareUrl: 'https://fanthom.ai/m/meeting-1on1-sarah?t=65'
+      }
+    ],
+    brief: {
+      previousMeetingDate: 'Sept 11, 2026',
+      previousDecisions: [
+        'Agreed on taking lead for the distributed cache architecture guild review.'
+      ],
+      openActionItems: [
+        'Prepare RFC-204 slides and benchmark charts (Completed).'
+      ],
+      suggestedTalkingPoints: [
+        'Review feedback from guild members on RFC-204.',
+        'Discuss bandwidth and capacity for H1 platform initiatives.'
+      ],
+      historicalContext: 'Regular bi-weekly leadership sync focusing on technical strategy, organizational impact, and career development.'
+    },
+    stats: {
+      wordsSpoken: 320,
+      speakingRatio: {
+        u1: 45,
+        u3: 55
+      },
+      sentimentScore: 98
+    }
+  },
+  {
+    id: 'meeting-upcoming-cs',
+    title: 'Customer Success Sync: Q3 Churn Risk & Retention Plan',
+    category: 'general',
+    date: '2026-09-30T16:30:00Z',
+    durationMinutes: 45,
+    status: 'upcoming',
+    location: 'Zoom (Simulated Bot Recording)',
+    preview: 'Upcoming review with CS leadership to evaluate tier-2 churn signals and deploy automated engagement workflows.',
+    participants: [
+      { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
+      { id: 'u7', name: 'Rachel Chen', email: 'rachel.c@fanthom.ai', role: 'Director of Product', avatarColor: '#6366f1' },
+      { id: 'u14', name: 'Maya Lin', email: 'maya.l@fanthom.ai', role: 'Head of Customer Success', avatarColor: '#ec4899' }
+    ],
+    transcript: [],
+    summaries: {
+      general: { overview: 'Scheduled meeting. The Fanthom AI recording bot is ready to join and record.', keyTopics: [], decisionsSummary: [], nextSteps: [] },
+      sales: { overview: 'Scheduled meeting.', keyTopics: [], decisionsSummary: [], nextSteps: [] },
+      project: { overview: 'Scheduled meeting.', keyTopics: [], decisionsSummary: [], nextSteps: [] },
+      'one-on-one': { overview: 'Scheduled meeting.', keyTopics: [], decisionsSummary: [], nextSteps: [] }
+    },
+    actionItems: [],
+    decisions: [],
+    highlights: [],
+    brief: {
+      previousMeetingDate: 'Sept 16, 2026',
+      previousDecisions: ['Flag accounts with less than 3 recorded meetings/month as amber risk.'],
+      openActionItems: ['Maya: Compile list of 12 at-risk accounts for Q3 sync.'],
+      suggestedTalkingPoints: [
+        'Review automated email alert cadence for declining recording activity.',
+        'Analyze adoption rate of new AI Action Item CRM sync.'
+      ],
+      historicalContext: 'Monthly review between Product and Customer Success ensuring enterprise customers maximize value from meeting intelligence.'
+    },
+    stats: {
+      wordsSpoken: 0,
+      speakingRatio: {},
+      sentimentScore: 0
+    }
+  }
+];
