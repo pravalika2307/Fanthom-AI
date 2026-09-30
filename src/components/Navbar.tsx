@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bot, Video, LayoutGrid, FileText, Compass } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 interface NavbarProps {
   currentView: 'dashboard' | 'workspace' | 'brief';
@@ -21,95 +21,68 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="navbar">
       <div className="nav-left">
-        <div className="brand-badge" onClick={() => onViewChange('dashboard')}>
-          <div className="brand-logo-mark">F</div>
-          <div className="brand-title-wrap">
-            <span className="brand-title">Fanthom</span>
-            <span className="brand-pill">Intelligence</span>
-          </div>
-        </div>
+        <button
+          className="brand-wordmark"
+          onClick={() => onViewChange('dashboard')}
+          title="Fanthom — Conversation Intelligence"
+        >
+          FANTHOM
+        </button>
 
-        <div className="nav-divider" />
-
-        <div className="nav-switcher">
+        <nav className="nav-links">
           <button
-            className={`nav-switch-btn ${currentView === 'dashboard' ? 'active' : ''}`}
+            className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`}
             onClick={() => onViewChange('dashboard')}
-            title="Browse all past and upcoming meetings"
           >
-            <LayoutGrid size={13} />
-            <span>Library</span>
+            Library
           </button>
           <button
-            className={`nav-switch-btn ${currentView === 'workspace' ? 'active' : ''}`}
+            className={`nav-link ${currentView === 'workspace' ? 'active' : ''}`}
             onClick={() => onViewChange('workspace')}
-            title="Review past meeting transcripts, highlights, and decisions"
           >
-            <FileText size={13} />
-            <span>Workspace</span>
+            Workspace
           </button>
           {currentView === 'brief' && (
             <button
-              className="nav-switch-btn active"
+              className="nav-link active"
               onClick={() => onViewChange('brief')}
-              title="Pre-Meeting Intelligence Brief"
             >
-              <Compass size={13} />
-              <span>Meeting Brief</span>
+              Meeting Brief
             </button>
           )}
-        </div>
+        </nav>
       </div>
 
       <div className="nav-center">
-        <div
+        <button
           className="global-search-bar"
           onClick={onOpenSearchModal}
-          style={{ cursor: 'pointer' }}
           title="Search conversation memory across all meetings (Cmd/Ctrl + K)"
         >
-          <Search size={13} color="var(--accent-cyan)" />
-          <span
-            className="search-input"
-            style={{
-              color: searchQuery ? 'var(--text-primary)' : 'var(--text-muted)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
+          <Search size={13} color="var(--text-muted)" />
+          <span className="search-placeholder">
             {searchQuery
-              ? `Search: "${searchQuery}"`
+              ? `"${searchQuery}"`
               : currentView === 'workspace' && activeMeetingTitle
-              ? `Search within "${activeMeetingTitle}" or all meetings...`
-              : 'Search across all conversations, decisions & actions...'}
+              ? `Search in "${activeMeetingTitle}" or all meetings...`
+              : 'Search conversations, decisions, commitments...'}
           </span>
           <kbd className="search-kbd">⌘K</kbd>
-        </div>
+        </button>
       </div>
 
       <div className="nav-right">
-        <div
-          className="bot-status-indicator"
-          title="Fanthom Notetaker Bot is ready to join calendar meetings"
-        >
-          <div className="status-pulse-dot" />
-          <Bot size={13} />
-          <span>Bot Ready</span>
-        </div>
-
         <button
-          className="btn-primary"
+          className="btn-outline-quiet"
           onClick={onSimulateNewMeeting}
-          title="Simulate joining an upcoming meeting"
+          title="Simulate recording upcoming session"
         >
-          <Video size={13} />
           <span>Record Sync</span>
         </button>
 
-        <div className="avatar-badge" title="Pravalika Reddy (Host)">
+        <span className="user-initials-badge" title="Pravalika Reddy (Host)">
           PR
-        </div>
+        </span>
       </div>
     </header>
   );

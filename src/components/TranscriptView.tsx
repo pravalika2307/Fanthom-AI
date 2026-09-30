@@ -325,7 +325,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
               No dialogue turns found matching "{localSearch}".
             </p>
             <button
-              className="btn-secondary"
+              className="btn-outline-quiet"
               onClick={() => setLocalSearch('')}
               style={{ marginTop: '10px', fontSize: '12px' }}
             >
@@ -335,65 +335,39 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
         ) : (
           filteredSegments.map((segment) => {
             const isActive = activeSegment?.id === segment.id;
-            const participant = participantMap.get(segment.speakerId);
-            const avatarColor = participant?.avatarColor || '#38bdf8';
 
             return (
-              <div
+              <article
                 key={segment.id}
                 data-segment-id={segment.id}
                 ref={isActive ? activeSegmentRef : null}
-                className={`transcript-turn-row ${isActive ? 'is-active' : ''}`}
+                className={`editorial-turn ${isActive ? 'is-active' : ''}`}
               >
-                {/* Speaker Left Gutter / Header */}
-                <div className="turn-gutter">
-                  <div
-                    className="speaker-avatar-tiny"
-                    style={{ backgroundColor: avatarColor }}
-                    title={`${segment.speakerName} (${participant?.role || 'Participant'})`}
+                {/* Speaker Left Meta Row */}
+                <header className="editorial-turn-meta">
+                  <button
+                    className="editorial-turn-timestamp"
+                    onClick={() => onSeek(segment.startTime)}
+                    title={`Jump playback to ${formatSeconds(segment.startTime)}`}
                   >
-                    {segment.speakerName
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')}
-                  </div>
+                    {formatSeconds(segment.startTime)}
+                  </button>
 
-                  <div className="turn-header-info">
-                    <span className="speaker-name">{segment.speakerName}</span>
+                  <span className="editorial-turn-speaker">{segment.speakerName}</span>
 
+                  {/* Contextual Action Bar — Quiet Inline Links on Hover */}
+                  <div className="editorial-turn-actions">
                     <button
-                      className="timestamp-pill"
-                      onClick={() => onSeek(segment.startTime)}
-                      title={`Jump playback to ${formatSeconds(segment.startTime)}`}
-                    >
-                      {formatSeconds(segment.startTime)}
-                    </button>
-
-                    {segment.sentiment === 'concern' && (
-                      <span className="sentiment-badge concern" title="Expressed concern or risk">
-                        Concern
-                      </span>
-                    )}
-                    {segment.sentiment === 'positive' && (
-                      <span className="sentiment-badge positive" title="Strong agreement">
-                        Aligned
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Contextual Action Bar (Placed Inline In Header, Appearing on Hover) */}
-                  <div className="turn-hover-actions">
-                    <button
-                      className="segment-action-btn"
+                      className="turn-action-link"
                       onClick={() => onPlayFromHere(segment.startTime)}
                       title="Play from this moment"
                     >
-                      <Play size={11} />
+                      <Play size={10} />
                       <span>Play</span>
                     </button>
-
+                    <span className="action-sep">·</span>
                     <button
-                      className="segment-action-btn"
+                      className="turn-action-link"
                       onClick={() =>
                         onRequestActionModal(
                           segment.text,
@@ -403,12 +377,12 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
                       }
                       title="Create Action Item from this turn"
                     >
-                      <CheckSquare size={11} />
+                      <CheckSquare size={10} />
                       <span>Action</span>
                     </button>
-
+                    <span className="action-sep">·</span>
                     <button
-                      className="segment-action-btn"
+                      className="turn-action-link"
                       onClick={() =>
                         onSaveHighlight(
                           segment.text,
@@ -419,54 +393,53 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
                       }
                       title="Save as highlight"
                     >
-                      <Bookmark size={11} />
+                      <Bookmark size={10} />
                       <span>Highlight</span>
                     </button>
-
+                    <span className="action-sep">·</span>
                     <button
-                      className="segment-action-btn"
+                      className="turn-action-link"
                       onClick={() =>
                         onCopyQuote(segment.text, segment.speakerName, segment.startTime)
                       }
                       title="Copy quote with attribution"
                     >
-                      <Copy size={11} />
+                      <Copy size={10} />
                       <span>Copy</span>
                     </button>
-
+                    <span className="action-sep">·</span>
                     <button
-                      className="segment-action-btn"
+                      className="turn-action-link"
                       onClick={() =>
                         onRequestShareModal(
                           segment.text,
                           segment.speakerName,
-                          segment.startTime,
-                          avatarColor
+                          segment.startTime
                         )
                       }
                       title="Share this moment with a deep link"
                     >
-                      <Share2 size={11} />
+                      <Share2 size={10} />
                       <span>Share</span>
                     </button>
                   </div>
-                </div>
+                </header>
 
                 {/* Speech Dialogue Body */}
-                <div className="turn-body">
-                  <p className="turn-text">
+                <div className="editorial-turn-body">
+                  <p className="editorial-turn-text">
                     {renderHighlightedText(segment.text, localSearch, sharedQuote)}
                   </p>
 
-                  {/* Highlight Tag Pill */}
+                  {/* Highlight Tag */}
                   {segment.highlighted && segment.highlightTag && (
-                    <div className="highlight-tag-badge">
-                      <Bookmark size={11} />
+                    <div className="editorial-highlight-tag">
+                      <Bookmark size={10} />
                       <span>{segment.highlightTag}</span>
                     </div>
                   )}
                 </div>
-              </div>
+              </article>
             );
           })
         )}

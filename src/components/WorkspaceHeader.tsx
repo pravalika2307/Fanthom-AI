@@ -32,79 +32,55 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   mobileActivePane = 'transcript',
   onMobilePaneToggle,
 }) => {
+  // Format participants as restrained editorial text
+  const primaryParticipants = meeting.participants.slice(0, 3).map((p) => p.name).join(', ');
+  const remainingCount = meeting.participants.length - 3;
+  const participantsSummary = remainingCount > 0
+    ? `${primaryParticipants} + ${remainingCount} others`
+    : primaryParticipants;
+
   return (
     <div className="workspace-header">
-      {/* Breadcrumb & Navigation */}
+      {/* Editorial Breadcrumb Navigation */}
       <div className="workspace-breadcrumbs">
-        <button className="breadcrumb-link" onClick={onBackToDashboard}>
+        <button className="breadcrumb-back-link" onClick={onBackToDashboard}>
           <ArrowLeft size={13} />
-          <span>Meetings Library</span>
+          <span>Meetings</span>
         </button>
-        <span className="crumb-separator">/</span>
-        <span className="crumb-category">{meeting.category}</span>
-        <span className="crumb-separator">/</span>
-        <span className="crumb-current">{meeting.title}</span>
+        <span className="crumb-slash">/</span>
+        <span className="crumb-category-tag">{meeting.category}</span>
       </div>
 
       {/* Main Title & Action Row */}
       <div className="workspace-title-row">
         <div className="workspace-title-block">
-          <h2 className="workspace-title">{meeting.title}</h2>
+          <h1 className="workspace-title">{meeting.title}</h1>
 
-          {/* High-Level Executive Outcome Banner */}
-          <div className="workspace-thesis-bar">
-            <span className="thesis-badge">Core Consensus:</span>
-            <span className="thesis-text">{meeting.preview}</span>
+          {/* Normal Editorial Consensus Hierarchy (no boxed neon pill) */}
+          <div className="workspace-editorial-consensus">
+            <span className="consensus-kicker">Consensus:</span>
+            <span className="consensus-text">{meeting.preview}</span>
           </div>
 
           <div className="workspace-meta-strip">
-            <span className="meta-item">
-              <Calendar size={12} />
-              {formatDateTime(meeting.date)}
+            <span className="meta-text">{formatDateTime(meeting.date)}</span>
+            <span className="meta-dot">·</span>
+            <span className="meta-text">{meeting.durationMinutes} min</span>
+            <span className="meta-dot">·</span>
+            <span
+              className="meta-participants-text"
+              title={meeting.participants.map((p) => `${p.name} (${p.role})`).join('\n')}
+            >
+              {meeting.participants.length} participants: {participantsSummary}
             </span>
-            <span className="meta-item">
-              <Clock size={12} />
-              {meeting.durationMinutes} minutes recorded
-            </span>
-            {meeting.location && (
-              <span className="meta-item">
-                <ExternalLink size={12} />
-                {meeting.location}
-              </span>
-            )}
           </div>
         </div>
 
         {/* Header Right Actions */}
         <div className="workspace-header-actions">
-          {/* Participant Avatar Stack */}
-          <div className="participant-avatar-group" title="Meeting Participants">
-            {meeting.participants.map((p) => {
-              const speakingRatio = meeting.stats.speakingRatio[p.id] || 0;
-              return (
-                <div
-                  key={p.id}
-                  className="participant-avatar"
-                  style={{ backgroundColor: p.avatarColor }}
-                  title={`${p.name} — ${p.role} (${speakingRatio}% of conversation)`}
-                >
-                  {p.name
-                    .split(' ')
-                    .map((n) => n[0])
-                    .join('')}
-                </div>
-              );
-            })}
-          </div>
-
           {onOpenBrief && (
             <button
-              className="btn-secondary"
-              style={{
-                borderColor: 'rgba(56, 189, 248, 0.4)',
-                color: 'var(--accent-cyan)',
-                backgroundColor: 'rgba(56, 189, 248, 0.06)',
-              }}
+              className="btn-outline-quiet"
               onClick={() => onOpenBrief(meeting.id)}
               title="Open Pre-Meeting Intelligence Brief"
             >
@@ -114,21 +90,21 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           )}
 
           <button
-            className="btn-secondary"
-            onClick={onExportMeeting}
-            title="Export complete Markdown summary"
-          >
-            <Download size={13} />
-            <span>Export</span>
-          </button>
-
-          <button
-            className="btn-secondary"
+            className="btn-outline-quiet"
             onClick={onShareMeeting}
-            title="Copy shareable link"
+            title="Copy shareable moment link"
           >
             <Share2 size={13} />
             <span>Share</span>
+          </button>
+
+          <button
+            className="btn-outline-quiet"
+            onClick={onExportMeeting}
+            title="Export complete Markdown report"
+          >
+            <Download size={13} />
+            <span>Export</span>
           </button>
         </div>
       </div>

@@ -9,17 +9,11 @@ import {
 } from '../types';
 import { formatSeconds, formatDate } from '../utils/formatters';
 import {
-  FileText,
-  CheckSquare,
-  Award,
-  Bookmark,
-  Compass,
-  Copy,
-  Plus,
-  Clock,
-  User,
   Check,
-  Zap,
+  Plus,
+  Copy,
+  Clock,
+  ExternalLink,
 } from 'lucide-react';
 
 interface ContextRailProps {
@@ -44,7 +38,7 @@ export const ContextRail: React.FC<ContextRailProps> = ({
   onCopyText,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    'brief' | 'actions' | 'decisions' | 'highlights' | 'context'
+    'brief' | 'decisions' | 'actions' | 'highlights' | 'context'
   >('brief');
 
   const [actionsFilter, setActionsFilter] = useState<'all' | 'my' | 'open' | 'done'>('all');
@@ -116,245 +110,249 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
   });
 
   return (
-    <div className="workspace-intel-rail">
-      {/* Rail Tab Navigation */}
-      <div className="intel-rail-tabs">
+    <aside className="workspace-intel-rail">
+      {/* Editorial Meeting Index Header */}
+      <div className="index-masthead">
+        <span className="index-eyebrow">Meeting Index</span>
+      </div>
+
+      {/* Index Navigation Tabs (01 Brief, 02 Decisions, etc.) */}
+      <nav className="index-nav-strip">
         <button
-          className={`intel-tab-btn ${activeTab === 'brief' ? 'active' : ''}`}
+          className={`index-nav-link ${activeTab === 'brief' ? 'active' : ''}`}
           onClick={() => setActiveTab('brief')}
-          title="Executive summary, key decisions, and immediate actions"
         >
-          <Zap size={13} />
-          <span>Brief</span>
+          <span className="index-prefix">01</span>
+          <span className="index-title">Brief</span>
         </button>
 
         <button
-          className={`intel-tab-btn ${activeTab === 'actions' ? 'active' : ''}`}
-          onClick={() => setActiveTab('actions')}
-          title="Action items task manager"
+          className={`index-nav-link ${activeTab === 'decisions' ? 'active' : ''}`}
+          onClick={() => setActiveTab('decisions')}
         >
-          <CheckSquare size={13} />
-          <span>Actions</span>
-          <span className="tab-badge">
+          <span className="index-prefix">02</span>
+          <span className="index-title">Decisions</span>
+          <span className="index-num-tag">{meeting.decisions.length}</span>
+        </button>
+
+        <button
+          className={`index-nav-link ${activeTab === 'actions' ? 'active' : ''}`}
+          onClick={() => setActiveTab('actions')}
+        >
+          <span className="index-prefix">03</span>
+          <span className="index-title">Actions</span>
+          <span className="index-num-tag">
             {meeting.actionItems.filter((a) => !a.completed).length}
           </span>
         </button>
 
         <button
-          className={`intel-tab-btn ${activeTab === 'decisions' ? 'active' : ''}`}
-          onClick={() => setActiveTab('decisions')}
-          title="Recorded decisions ledger"
-        >
-          <Award size={13} />
-          <span>Decisions</span>
-          <span className="tab-badge">{meeting.decisions.length}</span>
-        </button>
-
-        <button
-          className={`intel-tab-btn ${activeTab === 'highlights' ? 'active' : ''}`}
+          className={`index-nav-link ${activeTab === 'highlights' ? 'active' : ''}`}
           onClick={() => setActiveTab('highlights')}
-          title="Key moments and soundbites"
         >
-          <Bookmark size={13} />
-          <span>Highlights</span>
-          <span className="tab-badge">{meeting.highlights.length}</span>
+          <span className="index-prefix">04</span>
+          <span className="index-title">Highlights</span>
+          <span className="index-num-tag">{meeting.highlights.length}</span>
         </button>
 
         <button
-          className={`intel-tab-btn ${activeTab === 'context' ? 'active' : ''}`}
+          className={`index-nav-link ${activeTab === 'context' ? 'active' : ''}`}
           onClick={() => setActiveTab('context')}
-          title="Speaker dynamics and prior sync brief"
         >
-          <Compass size={13} />
-          <span>Dynamics</span>
+          <span className="index-prefix">05</span>
+          <span className="index-title">Dynamics</span>
         </button>
-      </div>
+      </nav>
 
-      {/* Tab Content Panels */}
-      <div className="intel-rail-content">
-        {/* TAB 1: EXECUTIVE BRIEF (UNIFIED KEY UNDERSTANDING + ACTIONS + DECISIONS) */}
+      {/* Tab Content Panels — Rendered with Editorial Typographic Hierarchy */}
+      <div className="index-content-scroll">
+        {/* ==============================================================
+            TAB 1: BRIEF
+            ============================================================== */}
         {activeTab === 'brief' && (
-          <>
+          <div className="editorial-panel">
             {/* Perspective Selector */}
-            <div className="template-selector-bar">
-              <span className="template-label">Perspective:</span>
+            <div className="editorial-perspective-row">
+              <span className="perspective-label">Perspective</span>
               <select
-                className="template-select"
+                className="perspective-select"
                 value={activeTemplate}
                 onChange={(e) => onTemplateChange(e.target.value as SummaryTemplate)}
               >
                 <option value="general">Executive Overview</option>
-                <option value="sales">Sales & Commercial Deal</option>
+                <option value="sales">Sales & Commercial</option>
                 <option value="project">Engineering & Architecture</option>
-                <option value="one-on-one">1:1 Coaching & Alignment</option>
+                <option value="one-on-one">1:1 Coaching</option>
               </select>
             </div>
 
-            {/* Overview Box */}
-            <div className="summary-overview-box">
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '8px',
-                }}
-              >
-                <span className="summary-section-title">Synthesis</span>
+            {/* Overview / Synthesis */}
+            <section className="editorial-section">
+              <div className="section-head-quiet">
+                <h3 className="section-title-quiet">Synthesis</h3>
                 <button
-                  className="btn-ghost"
+                  className="link-btn-quiet"
                   onClick={copyFullSummary}
-                  style={{ padding: '2px 6px', fontSize: '11px' }}
+                  title="Copy formatted summary"
                 >
                   <Copy size={11} />
                   <span>Copy</span>
                 </button>
               </div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.6 }}>
-                {summaryData.overview}
-              </p>
-            </div>
+              <p className="editorial-body-text">{summaryData.overview}</p>
+            </section>
 
-            {/* Crucial Decisions Box (Immediate Scannability) */}
-            <div className="summary-section">
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <span className="summary-section-title">
-                  <Award size={13} color="#10b981" />
-                  Key Decisions ({meeting.decisions.length})
-                </span>
-                <button
-                  className="btn-ghost"
-                  onClick={() => setActiveTab('decisions')}
-                  style={{ fontSize: '11px' }}
-                >
-                  View All →
-                </button>
+            {/* Key Decisions Summary */}
+            <section className="editorial-section">
+              <div className="section-head-quiet">
+                <h3 className="section-title-quiet">Decisions Agreed</h3>
+                <span className="section-count-quiet">{meeting.decisions.length}</span>
               </div>
-
-              <div className="decisions-list">
-                {meeting.decisions.slice(0, 3).map((decision) => (
-                  <div key={decision.id} className="decision-card">
-                    <div className="decision-header">
-                      <h4 className="decision-title">{decision.title}</h4>
+              <div className="editorial-rows-list">
+                {meeting.decisions.map((dec) => (
+                  <div key={dec.id} className="editorial-row">
+                    <div className="editorial-row-top">
+                      <span className="row-primary-text">{dec.title}</span>
                       <button
-                        className="timestamp-pill"
-                        onClick={() => onSeek(decision.timestampSeconds)}
-                        title="Jump to discussion in transcript"
+                        className="time-affordance-btn"
+                        onClick={() => onSeek(dec.timestampSeconds)}
+                        title={`Jump to ${formatSeconds(dec.timestampSeconds)}`}
                       >
-                        {formatSeconds(decision.timestampSeconds)}
+                        {formatSeconds(dec.timestampSeconds)}
                       </button>
                     </div>
-                    <p className="decision-desc">{decision.description}</p>
-                    <div className="decision-meta">
-                      <span className="badge-tag">{decision.category}</span>
-                      <span>Decided by: <strong>{decision.decidedBy}</strong></span>
-                    </div>
+                    <span className="row-meta-sub">
+                      Agreed by {dec.decidedBy} · {dec.category}
+                    </span>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
 
-            {/* Immediate Next Actions Box */}
-            <div className="summary-section">
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <span className="summary-section-title">
-                  <CheckSquare size={13} color="#f59e0b" />
-                  Next Actions ({meeting.actionItems.filter((a) => !a.completed).length} open)
+            {/* Immediate Action Items */}
+            <section className="editorial-section">
+              <div className="section-head-quiet">
+                <h3 className="section-title-quiet">Immediate Actions</h3>
+                <span className="section-count-quiet">
+                  {meeting.actionItems.filter((a) => !a.completed).length} open
                 </span>
-                <button
-                  className="btn-ghost"
-                  onClick={() => setActiveTab('actions')}
-                  style={{ fontSize: '11px' }}
-                >
-                  Manage →
-                </button>
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div className="editorial-rows-list">
                 {meeting.actionItems.slice(0, 4).map((action) => (
-                  <div key={action.id} className="action-item-card">
+                  <div
+                    key={action.id}
+                    className={`editorial-action-row ${action.completed ? 'completed' : ''}`}
+                  >
                     <button
-                      className={`action-checkbox-btn ${action.completed ? 'completed' : ''}`}
+                      className={`action-check-btn ${action.completed ? 'checked' : ''}`}
                       onClick={() => onToggleActionItem(action.id)}
-                      title={action.completed ? 'Mark incomplete' : 'Mark completed'}
+                      title={action.completed ? 'Mark open' : 'Mark completed'}
                     >
-                      {action.completed && <Check size={12} />}
+                      {action.completed && <Check size={11} />}
                     </button>
-
-                    <div className="action-body">
-                      <span className={`action-text ${action.completed ? 'completed' : ''}`}>
+                    <div className="action-row-main">
+                      <span className={`action-desc ${action.completed ? 'completed' : ''}`}>
                         {action.description}
                       </span>
-                      <div className="action-meta-strip">
-                        <span className="action-assignee-badge">
-                          <User size={11} />
-                          {action.assigneeName}
-                        </span>
-                        <span className="action-due-date">Due: {action.dueDate}</span>
-                      </div>
+                      <span className="action-meta-sub">
+                        {action.assigneeName} · due {action.dueDate}
+                      </span>
                     </div>
+                    {action.timestampSeconds !== undefined && action.timestampSeconds > 0 && (
+                      <button
+                        className="time-affordance-btn"
+                        onClick={() => onSeek(action.timestampSeconds!)}
+                        title={`Jump to ${formatSeconds(action.timestampSeconds)}`}
+                      >
+                        {formatSeconds(action.timestampSeconds)}
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
+            </section>
+
+            {/* Topics Discussed */}
+            <section className="editorial-section">
+              <div className="section-head-quiet">
+                <h3 className="section-title-quiet">Topics Covered</h3>
+              </div>
+              <div className="editorial-topics-list">
+                {summaryData.keyTopics.map((topic, i) => (
+                  <div key={i} className="editorial-topic-block">
+                    <h4 className="topic-name">{topic.title}</h4>
+                    <ul className="topic-notes">
+                      {topic.notes.map((note, idx) => (
+                        <li key={idx} className="topic-note-item">
+                          {note}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* ==============================================================
+            TAB 2: DECISIONS
+            ============================================================== */}
+        {activeTab === 'decisions' && (
+          <div className="editorial-panel">
+            <div className="section-head-quiet">
+              <h3 className="section-title-quiet">Decisions Ledger</h3>
+              <span className="section-count-quiet">{meeting.decisions.length} recorded</span>
             </div>
 
-            {/* Key Topics List */}
-            <div className="summary-section">
-              <span className="summary-section-title">Topics Discussed</span>
-              {summaryData.keyTopics.map((topic, i) => (
-                <div key={i} className="topic-card">
-                  <h4 className="topic-title">{topic.title}</h4>
-                  <ul className="topic-bullets">
-                    {topic.notes.map((note, idx) => (
-                      <li key={idx} className="topic-bullet-item">
-                        {note}
-                      </li>
-                    ))}
-                  </ul>
+            <div className="editorial-rows-list">
+              {meeting.decisions.map((decision) => (
+                <div key={decision.id} className="editorial-decision-item">
+                  <div className="editorial-row-top">
+                    <span className="row-primary-text">{decision.title}</span>
+                    <button
+                      className="time-affordance-btn"
+                      onClick={() => onSeek(decision.timestampSeconds)}
+                      title={`Jump to moment: ${formatSeconds(decision.timestampSeconds)}`}
+                    >
+                      {formatSeconds(decision.timestampSeconds)}
+                    </button>
+                  </div>
+                  <p className="row-body-sub">{decision.description}</p>
+                  <div className="row-meta-sub">
+                    <span>Agreed by {decision.decidedBy}</span>
+                    <span className="meta-sep">·</span>
+                    <span>Category: {decision.category}</span>
+                  </div>
                 </div>
               ))}
             </div>
-          </>
+          </div>
         )}
 
-        {/* TAB 2: DEDICATED ACTION ITEMS */}
+        {/* ==============================================================
+            TAB 3: ACTIONS
+            ============================================================== */}
         {activeTab === 'actions' && (
-          <>
-            <div className="actions-header-row">
-              <span className="summary-section-title">
-                Task Management ({meeting.actionItems.filter((a) => a.completed).length}/
-                {meeting.actionItems.length} done)
-              </span>
+          <div className="editorial-panel">
+            <div className="section-head-quiet">
+              <h3 className="section-title-quiet">Action Items</h3>
               <button
-                className="btn-secondary"
+                className="link-btn-quiet"
                 onClick={() => setIsAddingAction(!isAddingAction)}
-                style={{ padding: '3px 8px', fontSize: '11px' }}
               >
-                <Plus size={12} />
+                <Plus size={11} />
                 <span>{isAddingAction ? 'Cancel' : 'New Task'}</span>
               </button>
             </div>
 
-            {/* Actions Filter Pills */}
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+            {/* Filter pills */}
+            <div className="index-filter-strip">
               {(['all', 'my', 'open', 'done'] as const).map((filter) => (
                 <button
                   key={filter}
-                  className={`filter-pill ${actionsFilter === filter ? 'active' : ''}`}
+                  className={`index-filter-btn ${actionsFilter === filter ? 'active' : ''}`}
                   onClick={() => setActionsFilter(filter)}
-                  style={{ fontSize: '11px', padding: '3px 8px' }}
                 >
                   {filter === 'all'
                     ? 'All'
@@ -362,28 +360,27 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
                     ? 'Assigned to Me'
                     : filter === 'open'
                     ? 'Open'
-                    : 'Completed'}
+                    : 'Done'}
                 </button>
               ))}
             </div>
 
             {/* Inline Add Action Form */}
             {isAddingAction && (
-              <form className="add-action-inline-box" onSubmit={handleCreateAction}>
+              <form className="editorial-add-form" onSubmit={handleCreateAction}>
                 <input
                   type="text"
-                  className="inline-input"
-                  placeholder="What is the next action?"
+                  className="editorial-inline-input"
+                  placeholder="Task deliverable description..."
                   value={newActionText}
                   onChange={(e) => setNewActionText(e.target.value)}
                   autoFocus
                 />
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="form-sub-row">
                   <select
-                    className="inline-input"
+                    className="editorial-inline-input"
                     value={newActionAssignee}
                     onChange={(e) => setNewActionAssignee(e.target.value)}
-                    style={{ flex: 1 }}
                   >
                     {meeting.participants.map((p) => (
                       <option key={p.id} value={p.name}>
@@ -393,275 +390,168 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
                   </select>
                   <input
                     type="date"
-                    className="inline-input"
+                    className="editorial-inline-input"
                     value={newActionDueDate}
                     onChange={(e) => setNewActionDueDate(e.target.value)}
                     style={{ width: '130px' }}
                   />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                   <button
                     type="button"
-                    className="btn-ghost"
+                    className="link-btn-quiet"
                     onClick={() => setIsAddingAction(false)}
-                    style={{ fontSize: '11px' }}
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                    style={{ fontSize: '11px', padding: '4px 10px' }}
-                  >
+                  <button type="submit" className="btn-outline-quiet">
                     Save Task
                   </button>
                 </div>
               </form>
             )}
 
-            {/* Action Items List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Actions List */}
+            <div className="editorial-rows-list">
               {filteredActions.length === 0 ? (
-                <div className="empty-state-box" style={{ padding: '24px' }}>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    No tasks found matching this filter.
-                  </p>
-                </div>
+                <p className="empty-sub-text">No action items matching this filter.</p>
               ) : (
                 filteredActions.map((action) => (
-                  <div key={action.id} className="action-item-card">
+                  <div
+                    key={action.id}
+                    className={`editorial-action-row ${action.completed ? 'completed' : ''}`}
+                  >
                     <button
-                      className={`action-checkbox-btn ${action.completed ? 'completed' : ''}`}
+                      className={`action-check-btn ${action.completed ? 'checked' : ''}`}
                       onClick={() => onToggleActionItem(action.id)}
-                      title={action.completed ? 'Mark incomplete' : 'Mark completed'}
+                      title={action.completed ? 'Mark open' : 'Mark completed'}
                     >
-                      {action.completed && <Check size={12} />}
+                      {action.completed && <Check size={11} />}
                     </button>
-
-                    <div className="action-body">
-                      <span className={`action-text ${action.completed ? 'completed' : ''}`}>
+                    <div className="action-row-main">
+                      <span className={`action-desc ${action.completed ? 'completed' : ''}`}>
                         {action.description}
                       </span>
-
-                      <div className="action-meta-strip">
-                        <span className="action-assignee-badge">
-                          <User size={11} />
-                          {action.assigneeName}
-                        </span>
-                        <span className="action-due-date">Due: {action.dueDate}</span>
-                        {action.timestampSeconds !== undefined && action.timestampSeconds > 0 && (
-                          <button
-                            className="timestamp-pill"
-                            onClick={() => onSeek(action.timestampSeconds!)}
-                            title="Jump to where this task was agreed"
-                          >
-                            <Clock size={10} style={{ marginRight: 3 }} />
-                            {formatSeconds(action.timestampSeconds)}
-                          </button>
-                        )}
-                      </div>
+                      <span className="action-meta-sub">
+                        {action.assigneeName} · due {action.dueDate}
+                      </span>
                     </div>
+                    {action.timestampSeconds !== undefined && action.timestampSeconds > 0 && (
+                      <button
+                        className="time-affordance-btn"
+                        onClick={() => onSeek(action.timestampSeconds!)}
+                        title={`Jump to ${formatSeconds(action.timestampSeconds)}`}
+                      >
+                        {formatSeconds(action.timestampSeconds)}
+                      </button>
+                    )}
                   </div>
                 ))
               )}
             </div>
-          </>
-        )}
-
-        {/* TAB 3: DEDICATED DECISIONS */}
-        {activeTab === 'decisions' && (
-          <div className="decisions-list">
-            <span className="summary-section-title">
-              Recorded Decisions ({meeting.decisions.length})
-            </span>
-
-            {meeting.decisions.map((decision) => (
-              <div key={decision.id} className="decision-card">
-                <div className="decision-header">
-                  <h4 className="decision-title">{decision.title}</h4>
-                  <button
-                    className="timestamp-pill"
-                    onClick={() => onSeek(decision.timestampSeconds)}
-                    title="Jump to discussion"
-                  >
-                    {formatSeconds(decision.timestampSeconds)}
-                  </button>
-                </div>
-
-                <p className="decision-desc">{decision.description}</p>
-
-                <div className="decision-meta">
-                  <span className="badge-tag">Category: {decision.category}</span>
-                  <span>Agreed by: <strong>{decision.decidedBy}</strong></span>
-                </div>
-              </div>
-            ))}
           </div>
         )}
 
-        {/* TAB 4: HIGHLIGHTS */}
+        {/* ==============================================================
+            TAB 4: HIGHLIGHTS
+            ============================================================== */}
         {activeTab === 'highlights' && (
-          <div className="highlights-list">
-            <span className="summary-section-title">
-              Key Moments & Excerpts ({meeting.highlights.length})
-            </span>
+          <div className="editorial-panel">
+            <div className="section-head-quiet">
+              <h3 className="section-title-quiet">Highlights</h3>
+              <span className="section-count-quiet">{meeting.highlights.length} soundbites</span>
+            </div>
 
-            {meeting.highlights.map((highlight) => (
-              <div
-                key={highlight.id}
-                className="highlight-item-card"
-                onClick={() => onPlayFromHere(highlight.timestampSeconds)}
-                title="Click to play excerpt"
-              >
+            <div className="editorial-rows-list">
+              {meeting.highlights.map((highlight) => (
                 <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
+                  key={highlight.id}
+                  className="editorial-highlight-row"
+                  onClick={() => onPlayFromHere(highlight.timestampSeconds)}
+                  title="Click to seek and play excerpt"
                 >
-                  <span className="badge-tag" style={{ color: 'var(--accent-amber)' }}>
-                    {highlight.category.toUpperCase()}
-                  </span>
-                  <span className="timestamp-pill">
-                    {formatSeconds(highlight.timestampSeconds)} ({highlight.durationSeconds}s)
-                  </span>
+                  <blockquote className="highlight-quote-text">
+                    "{highlight.excerpt}"
+                  </blockquote>
+                  <div className="highlight-meta-row">
+                    <span className="highlight-speaker">{highlight.speakerName}</span>
+                    <button
+                      className="time-affordance-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSeek(highlight.timestampSeconds);
+                      }}
+                    >
+                      {formatSeconds(highlight.timestampSeconds)}
+                    </button>
+                  </div>
                 </div>
-
-                <h4 className="highlight-title">{highlight.title}</h4>
-                <p className="highlight-quote">"{highlight.excerpt}"</p>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                    color: 'var(--text-muted)',
-                  }}
-                >
-                  <span>Speaker: {highlight.speakerName}</span>
-                  <span style={{ color: 'var(--accent-cyan)' }}>Play Snippet →</span>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
-        {/* TAB 5: DYNAMICS & CONTEXT */}
+        {/* ==============================================================
+            TAB 5: DYNAMICS
+            ============================================================== */}
         {activeTab === 'context' && (
-          <div className="brief-section">
-            {/* Speaking Time Ratio */}
-            <div className="brief-card">
-              <span className="brief-card-title">Participant Speaking Time</span>
-              <div className="speaking-ratio-bar-wrap">
-                <div className="ratio-bar-segment">
-                  {meeting.participants.map((p) => {
-                    const ratio = meeting.stats.speakingRatio[p.id] || 0;
-                    if (ratio === 0) return null;
-                    return (
-                      <div
-                        key={p.id}
-                        className="ratio-portion"
-                        style={{
-                          width: `${ratio}%`,
-                          backgroundColor: p.avatarColor,
-                        }}
-                        title={`${p.name}: ${ratio}%`}
-                      />
-                    );
-                  })}
-                </div>
+          <div className="editorial-panel">
+            <div className="section-head-quiet">
+              <h3 className="section-title-quiet">Speaking Distribution</h3>
+            </div>
 
-                <div className="ratio-legend">
-                  {meeting.participants.map((p) => {
-                    const ratio = meeting.stats.speakingRatio[p.id] || 0;
-                    if (ratio === 0) return null;
-                    return (
-                      <div key={p.id} className="ratio-legend-item">
+            {/* Quiet Speaking Distribution Table */}
+            <div className="speaking-distribution-list">
+              {meeting.participants.map((p) => {
+                const ratio = meeting.stats.speakingRatio[p.id] || 0;
+                if (ratio === 0) return null;
+                return (
+                  <div key={p.id} className="speaking-dist-row">
+                    <div className="speaking-dist-left">
+                      <span className="dist-name">{p.name}</span>
+                      <span className="dist-role">{p.role.split(',')[0]}</span>
+                    </div>
+                    <div className="speaking-dist-right">
+                      <div className="dist-bar-track">
                         <div
-                          className="legend-color-dot"
-                          style={{ backgroundColor: p.avatarColor }}
+                          className="dist-bar-fill"
+                          style={{ width: `${ratio}%` }}
                         />
-                        <span>
-                          {p.name.split(' ')[0]}: {ratio}%
-                        </span>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Conversation Stats */}
-            <div className="brief-card">
-              <span className="brief-card-title">Session Metrics</span>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '8px',
-                  fontSize: '12px',
-                }}
-              >
-                <div>
-                  <span style={{ color: 'var(--text-muted)' }}>Words Spoken:</span>
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontWeight: 600,
-                      color: 'var(--text-primary)',
-                      marginTop: 2,
-                    }}
-                  >
-                    {meeting.stats.wordsSpoken.toLocaleString()}
+                      <span className="dist-pct">{ratio}%</span>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <span style={{ color: 'var(--text-muted)' }}>Consensus Index:</span>
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontWeight: 600,
-                      color: 'var(--accent-emerald)',
-                      marginTop: 2,
-                    }}
-                  >
-                    {meeting.stats.sentimentScore}%
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
 
-            {/* Previous Context */}
-            <div className="brief-card">
-              <span className="brief-card-title">Prior Sync Context</span>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                {meeting.brief?.historicalContext ||
-                  'No previous sync notes recorded for this thread.'}
-              </p>
-              {meeting.brief?.previousMeetingDate && (
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: 4 }}>
-                  Prior Sync: {formatDate(meeting.brief.previousMeetingDate)}
-                </span>
-              )}
-            </div>
+            {/* Prior Context Section */}
+            {meeting.brief?.historicalContext && (
+              <section className="editorial-section" style={{ marginTop: 24 }}>
+                <div className="section-head-quiet">
+                  <h3 className="section-title-quiet">Prior Sync Record</h3>
+                  {meeting.brief.previousMeetingDate && (
+                    <span className="section-count-quiet">
+                      {formatDate(meeting.brief.previousMeetingDate)}
+                    </span>
+                  )}
+                </div>
+                <p className="editorial-body-text">{meeting.brief.historicalContext}</p>
 
-            {meeting.brief?.previousDecisions && meeting.brief.previousDecisions.length > 0 && (
-              <div className="brief-card">
-                <span className="brief-card-title">Carried Over Decisions</span>
-                <ul className="topic-bullets">
-                  {meeting.brief.previousDecisions.map((dec, i) => (
-                    <li key={i} className="topic-bullet-item">
-                      {dec}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                {meeting.brief.previousDecisions && meeting.brief.previousDecisions.length > 0 && (
+                  <ul className="topic-notes" style={{ marginTop: 8 }}>
+                    {meeting.brief.previousDecisions.map((dec, i) => (
+                      <li key={i} className="topic-note-item">
+                        {dec}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
             )}
           </div>
         )}
       </div>
-    </div>
+    </aside>
   );
 };

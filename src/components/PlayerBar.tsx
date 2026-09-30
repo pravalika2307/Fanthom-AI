@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { formatSeconds } from '../utils/formatters';
-import { Play, Pause, RotateCcw, RotateCw, Volume2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, RotateCw } from 'lucide-react';
 import { Decision, Highlight } from '../types';
 
 interface PlayerBarProps {
@@ -26,7 +26,6 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
   playbackSpeed,
   onSpeedChange,
   currentSpeakerName,
-  currentSpeakerColor,
   decisions,
   highlights,
 }) => {
@@ -50,138 +49,111 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
     totalDurationSeconds > 0 ? (currentTime / totalDurationSeconds) * 100 : 0;
 
   return (
-    <div className="player-bar-container">
+    <div className="player-bar-quiet">
       {/* Scrubber and Timeline Markers */}
-      <div className="player-scrubber-row">
-        <span className="time-counter">{formatSeconds(currentTime)}</span>
-
+      <div className="player-timeline-strip">
         <div
           ref={scrubberRef}
-          className="scrubber-track-wrap"
+          className="quiet-scrubber-track"
           onClick={handleScrubberClick}
-          title="Click or drag to scrub playback"
+          title="Click to seek playback"
         >
-          <div className="scrubber-track">
-            <div className="scrubber-fill" style={{ width: `${progressPercent}%` }}>
-              <div className="scrubber-handle" />
-            </div>
-
-            {/* Interactive Decision Markers */}
-            {decisions.map((dec) => {
-              const markerPos = (dec.timestampSeconds / totalDurationSeconds) * 100;
-              return (
-                <div
-                  key={dec.id}
-                  className="timeline-marker marker-decision"
-                  style={{ left: `${markerPos}%` }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSeek(dec.timestampSeconds);
-                  }}
-                  title={`Decision: ${dec.title} (${formatSeconds(dec.timestampSeconds)})`}
-                />
-              );
-            })}
-
-            {/* Interactive Highlight Markers */}
-            {highlights.map((hl) => {
-              const markerPos = (hl.timestampSeconds / totalDurationSeconds) * 100;
-              return (
-                <div
-                  key={hl.id}
-                  className="timeline-marker marker-highlight"
-                  style={{ left: `${markerPos}%` }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSeek(hl.timestampSeconds);
-                  }}
-                  title={`Highlight: "${hl.title}" (${formatSeconds(hl.timestampSeconds)})`}
-                />
-              );
-            })}
+          <div className="quiet-scrubber-fill" style={{ width: `${progressPercent}%` }}>
+            <div className="quiet-scrubber-thumb" />
           </div>
-        </div>
 
-        <span className="time-counter">{formatSeconds(totalDurationSeconds)}</span>
+          {/* Quiet Discrete Markers */}
+          {decisions.map((dec) => {
+            const markerPos = (dec.timestampSeconds / totalDurationSeconds) * 100;
+            return (
+              <div
+                key={dec.id}
+                className="quiet-marker marker-dec"
+                style={{ left: `${markerPos}%` }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSeek(dec.timestampSeconds);
+                }}
+                title={`Decision: ${dec.title} (${formatSeconds(dec.timestampSeconds)})`}
+              />
+            );
+          })}
+
+          {highlights.map((hl) => {
+            const markerPos = (hl.timestampSeconds / totalDurationSeconds) * 100;
+            return (
+              <div
+                key={hl.id}
+                className="quiet-marker marker-hl"
+                style={{ left: `${markerPos}%` }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSeek(hl.timestampSeconds);
+                }}
+                title={`Highlight: "${hl.title}" (${formatSeconds(hl.timestampSeconds)})`}
+              />
+            );
+          })}
+        </div>
       </div>
 
-      {/* Control Actions Row */}
-      <div className="player-controls-row">
-        <div className="controls-left">
+      {/* Playback Controls Row */}
+      <div className="player-actions-row">
+        <div className="player-controls-group">
           <button
-            className="control-btn"
+            className="player-btn-text"
             onClick={() => handleSkip(-10)}
             title="Rewind 10 seconds (J key)"
           >
-            <RotateCcw size={14} />
-            <span className="kbd-shortcut-hint">J</span>
+            <RotateCcw size={13} />
+            <span className="player-kbd-hint">10s</span>
           </button>
 
           <button
-            className="control-btn control-btn-play"
+            className="player-btn-play"
             onClick={onPlayPauseToggle}
             title={isPlaying ? 'Pause (Spacebar)' : 'Play (Spacebar)'}
           >
-            {isPlaying ? <Pause size={16} /> : <Play size={16} style={{ marginLeft: 2 }} />}
+            {isPlaying ? <Pause size={14} /> : <Play size={14} style={{ marginLeft: 1 }} />}
           </button>
 
           <button
-            className="control-btn"
+            className="player-btn-text"
             onClick={() => handleSkip(10)}
             title="Forward 10 seconds (L key)"
           >
-            <RotateCw size={14} />
-            <span className="kbd-shortcut-hint">L</span>
+            <RotateCw size={13} />
+            <span className="player-kbd-hint">10s</span>
           </button>
 
-          <div className="speed-selector-group">
+          <div className="player-time-display">
+            <span className="current-time">{formatSeconds(currentTime)}</span>
+            <span className="time-divider">/</span>
+            <span className="total-time">{formatSeconds(totalDurationSeconds)}</span>
+          </div>
+        </div>
+
+        {/* Center / Right: Speaker Status and Speed */}
+        <div className="player-right-group">
+          {currentSpeakerName ? (
+            <span className="active-speaker-label">
+              <span className="speaking-dot" />
+              {currentSpeakerName} speaking
+            </span>
+          ) : (
+            <span className="active-speaker-label idle">Audio paused</span>
+          )}
+
+          <div className="player-speed-options">
             {[0.75, 1.0, 1.25, 1.5, 2.0].map((speed) => (
               <button
                 key={speed}
-                className={`speed-option-btn ${playbackSpeed === speed ? 'active' : ''}`}
+                className={`speed-btn ${playbackSpeed === speed ? 'active' : ''}`}
                 onClick={() => onSpeedChange(speed)}
-                title={`Playback speed: ${speed}x`}
               >
                 {speed}x
               </button>
             ))}
-          </div>
-        </div>
-
-        <div className="controls-right">
-          {currentSpeakerName ? (
-            <div className="current-speaker-indicator">
-              <div
-                className="speaker-avatar-tiny"
-                style={{
-                  backgroundColor: currentSpeakerColor || '#38bdf8',
-                  width: 18,
-                  height: 18,
-                  fontSize: 9,
-                }}
-              >
-                {currentSpeakerName
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')}
-              </div>
-              <div className="waveform-anim">
-                <div className="waveform-bar" />
-                <div className="waveform-bar" />
-                <div className="waveform-bar" />
-              </div>
-              <span className="current-speaker-text">
-                Speaking: <strong>{currentSpeakerName}</strong>
-              </span>
-            </div>
-          ) : (
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              (Audio paused — click play or any timestamp)
-            </span>
-          )}
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-muted)' }}>
-            <Volume2 size={14} />
           </div>
         </div>
       </div>
