@@ -56,10 +56,10 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
         <div className="workspace-title-block">
           <h1 className="workspace-title">{meeting.title}</h1>
 
-          {/* Normal Editorial Consensus Hierarchy (no boxed neon pill) */}
+          {/* Quiet Editorial Decision Hierarchy */}
           <div className="workspace-editorial-consensus">
-            <span className="consensus-kicker">Consensus:</span>
-            <span className="consensus-text">{meeting.preview}</span>
+            <span className="consensus-kicker">Decision</span>
+            <p className="consensus-text">{meeting.preview}</p>
           </div>
 
           <div className="workspace-meta-strip">

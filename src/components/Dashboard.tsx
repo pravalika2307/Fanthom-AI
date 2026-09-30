@@ -2,18 +2,10 @@ import React, { useState } from 'react';
 import { Meeting, MeetingCategory } from '../types';
 import { formatDateTime } from '../utils/formatters';
 import {
-  Calendar,
-  Clock,
-  CheckSquare,
-  Bookmark,
   ArrowRight,
-  Award,
   Video,
-  ExternalLink,
   Filter,
   CheckCircle2,
-  Compass,
-  AlertCircle,
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -98,18 +90,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="dashboard-view">
-      {/* Editorial Header & Activity Ledger Status */}
-      <div className="dashboard-header-strip">
+      {/* Editorial Meeting Library Masthead */}
+      <div className="library-masthead">
         <div>
-          <h1 className="dashboard-title">Meetings & Conversation Ledger</h1>
-          <p className="dashboard-subtitle">
-            Prepare before calls with intelligence briefs; review transcripts, decisions, and tasks after
-          </p>
+          <span className="library-eyebrow">WORKSPACE</span>
+          <h1 className="library-title">Meetings</h1>
         </div>
 
         <div className="dashboard-header-actions">
           <button
-            className="btn-secondary"
+            className="btn-outline-quiet"
             onClick={() => onSimulateJoin('Sprint Retro & Infrastructure Planning')}
             title="Simulate notetaker bot joining calendar sync"
           >
@@ -119,128 +109,75 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* High-Signal Summary Bar */}
-      <div className="ledger-summary-strip">
-        <div className="ledger-stat-item">
-          <span className="ledger-stat-label">Upcoming (To Prepare)</span>
-          <span className="ledger-stat-value" style={{ color: 'var(--accent-cyan)' }}>
-            {upcomingMeetings.length}
-          </span>
-        </div>
-        <div className="ledger-stat-divider" />
-        <div className="ledger-stat-item">
-          <span className="ledger-stat-label">Past Conversations</span>
-          <span className="ledger-stat-value">{totalCompleted}</span>
-        </div>
-        <div className="ledger-stat-divider" />
-        <div className="ledger-stat-item">
-          <span className="ledger-stat-label">Open Commitments</span>
-          <span className="ledger-stat-value" style={{ color: 'var(--accent-amber)' }}>
-            {pendingActions}
-          </span>
-          {myPendingActions > 0 && (
-            <span className="ledger-sub-tag">({myPendingActions} assigned to you)</span>
-          )}
-        </div>
-        <div className="ledger-stat-divider" />
-        <div className="ledger-stat-item">
-          <span className="ledger-stat-label">Decisions Logged</span>
-          <span className="ledger-stat-value" style={{ color: 'var(--accent-emerald)' }}>
-            {totalDecisions}
-          </span>
-        </div>
-      </div>
-
-      {/* UPCOMING MEETINGS PREPARATION HIGHLIGHT STRIP (Visible when in All or Upcoming view) */}
+      {/* UPCOMING SESSIONS (Quiet Editorial Rows) */}
       {(activeTab === 'all' || activeTab === 'upcoming') && upcomingMeetings.length > 0 && (
-        <div className="upcoming-prep-section">
-          <div className="upcoming-section-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Compass size={14} color="var(--accent-cyan)" />
-              <span className="upcoming-section-title">
-                Upcoming Sessions — Prepare with Pre-Meeting Briefs
-              </span>
-            </div>
-            <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-              Context carried forward from previous meetings
-            </span>
+        <section className="library-upcoming-section">
+          <div className="library-section-header">
+            <span className="library-section-title">Upcoming</span>
+            <span className="library-section-count">{upcomingMeetings.length}</span>
           </div>
 
-          <div className="upcoming-cards-grid">
-            {upcomingMeetings.map((upcoming) => (
-              <div
-                key={upcoming.id}
-                className="upcoming-brief-card"
-                onClick={() => onOpenBrief(upcoming.id)}
-              >
-                <div className="upcoming-card-top">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span className="upcoming-kicker-tag">PRE-MEETING BRIEF</span>
-                    <span className={`meeting-category-tag ${getCategoryClass(upcoming.category)}`}>
-                      {upcoming.category}
-                    </span>
+          <div className="upcoming-editorial-list">
+            {upcomingMeetings.map((upcoming) => {
+              const brief = upcoming.preMeetingBrief;
+              const commitmentsCount = brief?.openCommitments.length || 0;
+              const decisionsCount = brief?.carriedDecisions.length || 0;
+
+              return (
+                <div
+                  key={upcoming.id}
+                  className="upcoming-editorial-row"
+                  onClick={() => onOpenBrief(upcoming.id)}
+                >
+                  <div className="upcoming-row-main">
+                    <div className="upcoming-row-meta-top">
+                      <span className="upcoming-category-label">
+                        {upcoming.category.toUpperCase()}
+                      </span>
+                      <span className="meta-sep">·</span>
+                      <span className="upcoming-date-text">
+                        {formatDateTime(upcoming.date)}
+                      </span>
+                      <span className="meta-sep">·</span>
+                      <span className="upcoming-participants-count">
+                        {upcoming.participants.length} participants
+                      </span>
+                    </div>
+
+                    <h2 className="upcoming-row-title">{upcoming.title}</h2>
+
+                    <div className="upcoming-row-details">
+                      <span className="upcoming-commitments-summary">
+                        {commitmentsCount} open commitment{commitmentsCount !== 1 ? 's' : ''} · {decisionsCount} decision{decisionsCount !== 1 ? 's' : ''}
+                      </span>
+                      {brief?.relatedPreviousMeeting && (
+                        <>
+                          <span className="meta-sep">·</span>
+                          <span className="upcoming-connected-label">
+                            Connected to <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{brief.relatedPreviousMeeting.title}</strong>
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <span className="upcoming-time-tag">
-                    <Calendar size={11} style={{ marginRight: 3 }} />
-                    {formatDateTime(upcoming.date)}
-                  </span>
+
+                  <div className="upcoming-row-action">
+                    <button
+                      className="link-action-quiet"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenBrief(upcoming.id);
+                      }}
+                    >
+                      <span>Prepare brief</span>
+                      <ArrowRight size={13} />
+                    </button>
+                  </div>
                 </div>
-
-                <h3 className="upcoming-card-title">{upcoming.title}</h3>
-                <p className="upcoming-card-desc">{upcoming.preview}</p>
-
-                {/* Connected Previous Meeting Context */}
-                {upcoming.preMeetingBrief?.relatedPreviousMeeting && (
-                  <div className="upcoming-connected-strip">
-                    <span style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>Connected to: </span>
-                    <span style={{ color: 'var(--text-primary)' }}>
-                      {upcoming.preMeetingBrief.relatedPreviousMeeting.title}
-                    </span>
-                    <span style={{ color: 'var(--text-muted)' }}>
-                      ({upcoming.preMeetingBrief.openCommitments.length} commitments ·{' '}
-                      {upcoming.preMeetingBrief.carriedDecisions.length} decisions)
-                    </span>
-                  </div>
-                )}
-
-                <div className="upcoming-card-footer">
-                  <div className="participant-avatar-group">
-                    {upcoming.participants.slice(0, 5).map((p) => (
-                      <div
-                        key={p.id}
-                        className="participant-avatar"
-                        style={{ backgroundColor: p.avatarColor }}
-                        title={`${p.name} (${p.role})`}
-                      >
-                        {p.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')}
-                      </div>
-                    ))}
-                    {upcoming.participants.length > 5 && (
-                      <div className="avatar-overflow">
-                        +{upcoming.participants.length - 5}
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    className="btn-primary"
-                    style={{ fontSize: '11.5px', padding: '4px 10px' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenBrief(upcoming.id);
-                    }}
-                  >
-                    <Compass size={12} />
-                    <span>Prepare Brief →</span>
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        </div>
+        </section>
       )}
 
       {/* Filter and View Controls Bar */}
@@ -250,13 +187,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
             className={`filter-pill ${activeTab === 'all' ? 'active' : ''}`}
             onClick={() => setActiveTab('all')}
           >
-            All Conversations ({meetings.length})
+            All ({meetings.length})
           </button>
           <button
             className={`filter-pill ${activeTab === 'upcoming' ? 'active' : ''}`}
             onClick={() => setActiveTab('upcoming')}
           >
-            <Compass size={11} style={{ marginRight: 3 }} />
             Upcoming ({upcomingMeetings.length})
           </button>
           <button
@@ -296,36 +232,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </button>
 
           <span className="filter-count-badge">
-            {filteredMeetings.length} of {meetings.length} conversations
+            {filteredMeetings.length} of {meetings.length}
           </span>
         </div>
       </div>
 
       {/* Clear Editorial Section Header */}
-      <div className="meetings-section-header">
-        <h2 className="meetings-section-title">
+      <div className="library-section-header" style={{ marginTop: '24px' }}>
+        <span className="library-section-title">
           {activeTab === 'upcoming'
-            ? 'Upcoming Meetings · Prepare'
+            ? 'Upcoming Meetings'
             : activeTab === 'all'
-            ? 'Recorded Conversations · Review & Act'
+            ? 'Recent Conversations'
             : `${activeTab.toUpperCase()} Conversations`}
-        </h2>
-        <span className="meetings-section-desc">
-          {activeTab === 'upcoming'
-            ? 'Review executive briefs, open deliverables, and talking points before entering'
-            : 'Explore synchronized transcripts, decisions, and tasks'}
         </span>
+        <span className="library-section-count">{filteredMeetings.length}</span>
       </div>
 
-      {/* Meetings List */}
-      <div className="meetings-list">
+      {/* Meetings List — Editorial List Rows */}
+      <div className="meetings-editorial-list">
         {filteredMeetings.length === 0 ? (
           <div className="empty-state-box">
-            <Filter size={24} color="#64748b" style={{ marginBottom: 12 }} />
-            <h3 style={{ fontSize: '15px', color: 'var(--text-primary)', marginBottom: 4 }}>
+            <Filter size={20} color="#64748b" style={{ marginBottom: 10 }} />
+            <h3 style={{ fontSize: '14px', color: 'var(--text-primary)', marginBottom: 4 }}>
               No matching meetings found
             </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto 16px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto 14px' }}>
               {onlyMyActions
                 ? "You don't have any incomplete action items in the selected category."
                 : searchQuery
@@ -334,13 +266,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </p>
             {(onlyMyActions || searchQuery || activeTab !== 'all') && (
               <button
-                className="btn-secondary"
+                className="btn-outline-quiet"
                 onClick={() => {
                   setActiveTab('all');
                   setOnlyMyActions(false);
                 }}
               >
-                Reset All Filters
+                Reset Filters
               </button>
             )}
           </div>
@@ -350,148 +282,83 @@ export const Dashboard: React.FC<DashboardProps> = ({
             const hasMyPending = meeting.actionItems.some(
               (a) => a.assigneeName.toLowerCase().includes(currentUser.toLowerCase()) && !a.completed
             );
+            const openTasksCount = meeting.actionItems.filter((a) => !a.completed).length;
 
             return (
               <div
                 key={meeting.id}
-                className="meeting-row-card"
+                className="meeting-editorial-row"
                 onClick={() =>
                   isUpcoming ? onOpenBrief(meeting.id) : onSelectMeeting(meeting.id)
                 }
               >
-                {/* Main Meeting Info */}
-                <div className="meeting-main-info">
-                  <div className="meeting-title-row">
-                    <span className={`meeting-category-tag ${getCategoryClass(meeting.category)}`}>
-                      {meeting.category}
+                {/* Main Information Column */}
+                <div className="meeting-row-main">
+                  <div className="meeting-row-meta-top">
+                    <span className="upcoming-category-label">
+                      {meeting.category.toUpperCase()}
                     </span>
-                    <h3 className="meeting-card-title">{meeting.title}</h3>
-                    {isUpcoming ? (
-                      <span className="upcoming-badge-pill">Upcoming · Prepare</span>
-                    ) : (
-                      hasMyPending && (
-                        <span className="my-task-indicator" title="You have open action items in this meeting">
-                          Action Needed
-                        </span>
-                      )
+                    <span className="meta-sep">·</span>
+                    <span className="meta-text">{formatDateTime(meeting.date)}</span>
+                    <span className="meta-sep">·</span>
+                    <span className="meta-text">{meeting.durationMinutes} min</span>
+                    <span className="meta-sep">·</span>
+                    <span className="meta-text">{meeting.participants.length} participants</span>
+                    {hasMyPending && (
+                      <>
+                        <span className="meta-sep">·</span>
+                        <span className="my-task-indicator-quiet">Action Needed</span>
+                      </>
                     )}
                   </div>
 
-                  <p className="meeting-preview-text">
-                    <strong style={{ color: 'var(--text-primary)' }}>
-                      {isUpcoming ? 'Prep Focus: ' : 'Key Outcome: '}
-                    </strong>
+                  <h3 className="meeting-row-title">{meeting.title}</h3>
+
+                  <p className="meeting-row-outcome">
                     {meeting.preview}
                   </p>
 
-                  <div className="meeting-meta-row">
-                    <span className="meta-item">
-                      <Calendar size={12} />
-                      {formatDateTime(meeting.date)}
-                    </span>
-                    <span className="meta-item">
-                      <Clock size={12} />
-                      {meeting.durationMinutes} mins
-                    </span>
-                    {meeting.location && (
-                      <span className="meta-item">
-                        <ExternalLink size={12} />
-                        {meeting.location}
+                  <div className="meeting-row-signals">
+                    {isUpcoming ? (
+                      <span className="signal-text">
+                        {meeting.preMeetingBrief?.openCommitments.length || 0} commitments ·{' '}
+                        {meeting.preMeetingBrief?.carriedDecisions.length || 0} decisions
+                      </span>
+                    ) : (
+                      <span className="signal-text">
+                        {meeting.decisions.length} decision{meeting.decisions.length !== 1 ? 's' : ''} ·{' '}
+                        {openTasksCount} open task{openTasksCount !== 1 ? 's' : ''} ·{' '}
+                        {meeting.highlights.length} highlight{meeting.highlights.length !== 1 ? 's' : ''}
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Stats & Participants Column */}
-                <div className="meeting-stats-col">
-                  <div className="participant-avatar-group">
-                    {meeting.participants.slice(0, 5).map((participant) => (
-                      <div
-                        key={participant.id}
-                        className="participant-avatar"
-                        style={{ backgroundColor: participant.avatarColor }}
-                        title={`${participant.name} (${participant.role})`}
-                      >
-                        {participant.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')}
-                      </div>
-                    ))}
-                    {meeting.participants.length > 5 && (
-                      <div className="avatar-overflow" title="More participants">
-                        +{meeting.participants.length - 5}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="meeting-highlights-summary">
-                    {isUpcoming ? (
-                      <>
-                        <span className="badge-tag" style={{ color: 'var(--accent-amber)' }}>
-                          <CheckSquare size={11} color="#f59e0b" />
-                          {meeting.preMeetingBrief?.openCommitments.length || 0} Commitments
-                        </span>
-                        <span className="badge-tag" style={{ color: 'var(--accent-emerald)' }}>
-                          <Award size={11} color="#10b981" />
-                          {meeting.preMeetingBrief?.carriedDecisions.length || 0} Decisions
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span
-                          className="badge-tag"
-                          style={
-                            hasMyPending
-                              ? { borderColor: 'var(--accent-amber)', color: 'var(--accent-amber)' }
-                              : {}
-                          }
-                        >
-                          <CheckSquare size={11} color={hasMyPending ? '#f59e0b' : '#94a3b8'} />
-                          {meeting.actionItems.filter((a) => !a.completed).length} Open Tasks
-                        </span>
-                        <span className="badge-tag">
-                          <Award size={11} color="#10b981" />
-                          {meeting.decisions.length} Decisions
-                        </span>
-                        <span className="badge-tag">
-                          <Bookmark size={11} color="#38bdf8" />
-                          {meeting.highlights.length} Highlights
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Action Column */}
-                <div className="meeting-actions-col">
+                {/* Right Action Link */}
+                <div className="meeting-row-action">
                   {isUpcoming ? (
                     <button
-                      className="btn-primary"
-                      style={{ fontSize: '12px' }}
+                      className="link-action-quiet"
                       onClick={(e) => {
                         e.stopPropagation();
                         onOpenBrief(meeting.id);
                       }}
                     >
-                      <Compass size={12} />
-                      <span>Prepare Brief</span>
+                      <span>Prepare brief</span>
+                      <ArrowRight size={13} />
                     </button>
                   ) : (
                     <button
-                      className="btn-secondary"
+                      className="link-action-quiet"
                       onClick={(e) => {
                         e.stopPropagation();
                         onSelectMeeting(meeting.id);
                       }}
                     >
-                      <span>Open Workspace</span>
+                      <span>Open record</span>
                       <ArrowRight size={13} />
                     </button>
                   )}
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    {isUpcoming ? 'Scheduled' : 'Synced'}
-                  </span>
                 </div>
               </div>
             );

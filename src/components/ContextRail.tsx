@@ -301,28 +301,32 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
         {activeTab === 'decisions' && (
           <div className="editorial-panel">
             <div className="section-head-quiet">
-              <h3 className="section-title-quiet">Decisions Ledger</h3>
-              <span className="section-count-quiet">{meeting.decisions.length} recorded</span>
+              <h3 className="section-title-quiet">Decisions</h3>
+              <span className="section-count-quiet">{meeting.decisions.length}</span>
             </div>
 
-            <div className="editorial-rows-list">
-              {meeting.decisions.map((decision) => (
-                <div key={decision.id} className="editorial-decision-item">
-                  <div className="editorial-row-top">
-                    <span className="row-primary-text">{decision.title}</span>
-                    <button
-                      className="time-affordance-btn"
-                      onClick={() => onSeek(decision.timestampSeconds)}
-                      title={`Jump to moment: ${formatSeconds(decision.timestampSeconds)}`}
-                    >
-                      {formatSeconds(decision.timestampSeconds)}
-                    </button>
-                  </div>
-                  <p className="row-body-sub">{decision.description}</p>
-                  <div className="row-meta-sub">
-                    <span>Agreed by {decision.decidedBy}</span>
-                    <span className="meta-sep">·</span>
-                    <span>Category: {decision.category}</span>
+            <div className="editorial-decisions-list">
+              {meeting.decisions.map((decision, idx) => (
+                <div key={decision.id} className="editorial-decision-row">
+                  <span className="decision-prefix-num">
+                    {String(idx + 1).padStart(2, '0')}
+                  </span>
+                  <div className="decision-row-body">
+                    <span className="decision-title-text">{decision.title}</span>
+                    <div className="decision-meta-line">
+                      <span>{decision.decidedBy}</span>
+                      <span className="meta-sep">·</span>
+                      <button
+                        className="decision-time-link"
+                        onClick={() => onSeek(decision.timestampSeconds)}
+                        title={`Jump to ${formatSeconds(decision.timestampSeconds)}`}
+                      >
+                        {formatSeconds(decision.timestampSeconds)}
+                      </button>
+                    </div>
+                    {decision.description && (
+                      <p className="decision-desc-text">{decision.description}</p>
+                    )}
                   </div>
                 </div>
               ))}
