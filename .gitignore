@@ -1,0 +1,6 @@
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Explicitly ensure agent logs are tracked
+!.agent-logs/

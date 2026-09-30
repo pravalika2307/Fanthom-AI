@@ -1,0 +1,310 @@
+#!/usr/bin/env python3
+"""
+8x SWE Assignment - Automatic Agent Capture Script
+Captures prompt -> final response for every turn into .agent-logs/
+"""
+
+import os
+import sys
+import json
+import re
+import argparse
+from pathlib import Path
+from datetime import datetime, timezone
+
+AUTHOR = "pravalika2307"
+PROJECT = "Fanthom-AI"
+MODEL_NAME = "Gemini 3.8 Flash (Medium)"
+TOOL_NAME = "Antigravity IDE"
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+LOG_DIR = REPO_ROOT / ".agent-logs"
+BRAIN_BASE = Path(r"C:\Users\Prava\.gemini\antigravity-ide\brain")
+
+
+def read_stdin_safe():
+    """Safely reads stdin without blocking indefinitely on Windows."""
+    try:
+        import msvcrt
+        import ctypes
+        from ctypes import wintypes
+        handle = msvcrt.get_osfhandle(sys.stdin.fileno())
+        avail = wintypes.DWORD()
+        success = ctypes.windll.kernel32.PeekNamedPipe(handle, None, 0, None, ctypes.byref(avail), None)
+        if success and avail.value > 0:
+            return sys.stdin.read(avail.value)
+    except Exception:
+        pass
+    return ""
+
+
+def get_latest_session_id():
+    """Find the most recently modified session in brain directory."""
+    if not BRAIN_BASE.exists():
+        return None
+    sessions = []
+    for item in BRAIN_BASE.iterdir():
+        if item.is_dir() and len(item.name) >= 30:  # UUID format
+            transcript = item / ".system_generated" / "logs" / "transcript_full.jsonl"
+            if transcript.exists():
+                sessions.append((transcript.stat().st_mtime, item.name, transcript))
+            else:
+                transcript_compact = item / ".system_generated" / "logs" / "transcript.jsonl"
+                if transcript_compact.exists():
+                    sessions.append((transcript_compact.stat().st_mtime, item.name, transcript_compact))
+    if not sessions:
+        return None
+    sessions.sort(reverse=True, key=lambda x: x[0])
+    return sessions[0][1], sessions[0][2]
+
+
+def get_all_session_ids():
+    """Find all valid sessions in brain directory."""
+    if not BRAIN_BASE.exists():
+        return []
+    results = []
+    for item in BRAIN_BASE.iterdir():
+        if item.is_dir() and len(item.name) >= 30:
+            transcript = item / ".system_generated" / "logs" / "transcript_full.jsonl"
+            compact = item / ".system_generated" / "logs" / "transcript.jsonl"
+            if transcript.exists():
+                results.append((item.name, transcript))
+            elif compact.exists():
+                results.append((item.name, compact))
+    return results
+
+
+def extract_prompt_text(content):
+    """Extract verbatim prompt, stripping outer system tags if present."""
+    if not content:
+        return ""
+    m = re.search(r"<USER_REQUEST>\s*(.*?)\s*</USER_REQUEST>", content, re.DOTALL)
+    if m:
+        return m.group(1).strip()
+    return content.strip()
+
+
+def parse_transcript(transcript_path):
+    """
+    Parses transcript_full.jsonl and extracts prompt -> final response exchanges.
+    Filters out chain-of-thought, tool calls, diffs, file reads, and internal reasoning.
+    """
+    exchanges = []
+    current_prompt = None
+    current_prompt_time = None
+    turn_planner_responses = []
+
+    with open(transcript_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                step = json.loads(line)
+            except Exception:
+                continue
+
+            step_type = step.get("type")
+            source = step.get("source")
+            content = step.get("content", "")
+            created_at = step.get("created_at", "")
+            tool_calls = step.get("tool_calls", [])
+
+            if step_type == "USER_INPUT" and source == "USER_EXPLICIT":
+                # Finalize previous turn if one was open
+                if current_prompt is not None:
+                    final_resp = "(No final response recorded)"
+                    resp_time = current_prompt_time
+                    for resp_content, resp_ts, resp_tc in reversed(turn_planner_responses):
+                        if resp_content and len(resp_tc) == 0:
+                            final_resp = resp_content
+                            resp_time = resp_ts
+                            break
+                        elif resp_content and final_resp == "(No final response recorded)":
+                            final_resp = resp_content
+                            resp_time = resp_ts
+
+                    exchanges.append({
+                        "prompt": current_prompt,
+                        "prompt_time": current_prompt_time,
+                        "response": final_resp,
+                        "response_time": resp_time,
+                    })
+
+                current_prompt = extract_prompt_text(content)
+                current_prompt_time = created_at
+                turn_planner_responses = []
+
+            elif step_type == "PLANNER_RESPONSE" and source == "MODEL":
+                if content:
+                    turn_planner_responses.append((content, created_at, tool_calls))
+
+    # Finalize the last turn
+    if current_prompt is not None:
+        final_resp = "(In progress / no response)"
+        resp_time = current_prompt_time
+        for resp_content, resp_ts, resp_tc in reversed(turn_planner_responses):
+            if resp_content and len(resp_tc) == 0:
+                final_resp = resp_content
+                resp_time = resp_ts
+                break
+            elif resp_content and final_resp == "(In progress / no response)":
+                final_resp = resp_content
+                resp_time = resp_ts
+
+        exchanges.append({
+            "prompt": current_prompt,
+            "prompt_time": current_prompt_time,
+            "response": final_resp,
+            "response_time": resp_time,
+        })
+
+    return exchanges
+
+
+def format_timestamp_filename(ts_str):
+    """Convert ISO UTC timestamp 2026-09-30T13:46:52Z to 2026-09-30_13-46-52."""
+    try:
+        ts_clean = ts_str.replace("Z", "").replace("+00:00", "")
+        dt = datetime.fromisoformat(ts_clean)
+        return dt.strftime("%Y-%m-%d_%H-%M-%S")
+    except Exception:
+        return datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def format_date_str(ts_str):
+    """Convert ISO UTC timestamp to YYYY-MM-DD."""
+    try:
+        ts_clean = ts_str.replace("Z", "").replace("+00:00", "")
+        dt = datetime.fromisoformat(ts_clean)
+        return dt.strftime("%Y-%m-%d")
+    except Exception:
+        return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def process_session(session_id, transcript_path):
+    """Processes a single session and writes its markdown log."""
+    transcript_file = None
+    if transcript_path:
+        tp = Path(transcript_path)
+        full_tp = tp.parent / "transcript_full.jsonl"
+        if full_tp.exists():
+            transcript_file = full_tp
+        elif tp.exists():
+            transcript_file = tp
+
+    if not transcript_file or not transcript_file.exists():
+        expected_full = BRAIN_BASE / session_id / ".system_generated" / "logs" / "transcript_full.jsonl"
+        expected_compact = BRAIN_BASE / session_id / ".system_generated" / "logs" / "transcript.jsonl"
+        if expected_full.exists():
+            transcript_file = expected_full
+        elif expected_compact.exists():
+            transcript_file = expected_compact
+
+    if not transcript_file or not transcript_file.exists():
+        return False
+
+    exchanges = parse_transcript(transcript_file)
+    if not exchanges:
+        return False
+
+    first_prompt_time = exchanges[0]["prompt_time"] or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    last_prompt_time = exchanges[-1]["prompt_time"] or first_prompt_time
+    session_date = format_date_str(first_prompt_time)
+    time_prefix = format_timestamp_filename(first_prompt_time)
+
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log_filename = f"{time_prefix}_{session_id}.md"
+    log_file_path = LOG_DIR / log_filename
+
+    existing_files = list(LOG_DIR.glob(f"*_{session_id}.md"))
+    if existing_files:
+        log_file_path = existing_files[0]
+
+    lines = []
+    lines.append("---")
+    lines.append(f"session_id: {session_id}")
+    lines.append(f"date: {session_date}")
+    lines.append(f"author: {AUTHOR}")
+    lines.append(f"model: {MODEL_NAME}")
+    lines.append(f"tool: {TOOL_NAME}")
+    lines.append(f"project: {PROJECT}")
+    lines.append(f"total_exchanges: {len(exchanges)}")
+    lines.append(f"first_prompt_time: {first_prompt_time}")
+    lines.append(f"last_prompt_time: {last_prompt_time}")
+    lines.append("---")
+    lines.append("")
+    lines.append(f"# Session Log - {session_date}")
+    lines.append("")
+    lines.append(f"Session: `{session_id}` | Project: `{PROJECT}` | Author: `{AUTHOR}`")
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+
+    for i, ex in enumerate(exchanges, start=1):
+        lines.append(f"[LOG_ENTRY type=PROMPT num={i} session={session_id}]")
+        lines.append(f"timestamp: {ex['prompt_time']}")
+        lines.append(f"model: {MODEL_NAME}")
+        lines.append("")
+        lines.append(ex["prompt"])
+        lines.append("")
+        lines.append("")
+        lines.append(f"[LOG_ENTRY type=RESPONSE num={i} session={session_id}]")
+        lines.append(f"timestamp: {ex['response_time']}")
+        lines.append(f"model: {MODEL_NAME}")
+        lines.append("")
+        lines.append(ex["response"])
+        lines.append("")
+        lines.append("")
+
+    content_to_write = "\n".join(lines)
+    with open(log_file_path, "w", encoding="utf-8") as f:
+        f.write(content_to_write)
+    return True
+
+
+def capture():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--session", help="Session ID to capture")
+    parser.add_argument("--all", action="store_true", help="Capture all sessions in brain")
+    args, _ = parser.parse_known_args()
+
+    if args.all:
+        for sid, tpath in get_all_session_ids():
+            process_session(sid, tpath)
+        print("{}")
+        return
+
+    if args.session:
+        process_session(args.session, None)
+        print("{}")
+        return
+
+    # Check stdin from hooks
+    stdin_data = read_stdin_safe()
+    hook_payload = {}
+    if stdin_data:
+        try:
+            hook_payload = json.loads(stdin_data)
+        except Exception:
+            pass
+
+    session_id = hook_payload.get("conversationId") or os.environ.get("ANTIGRAVITY_CONVERSATION_ID")
+    transcript_path = hook_payload.get("transcriptPath")
+
+    if not session_id or not transcript_path:
+        latest = get_latest_session_id()
+        if latest:
+            if not session_id:
+                session_id = latest[0]
+            if not transcript_path:
+                transcript_path = str(latest[1])
+
+    if session_id:
+        process_session(session_id, transcript_path)
+
+    print("{}")
+
+
+if __name__ == "__main__":
+    capture()
