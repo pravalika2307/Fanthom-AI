@@ -4,14 +4,14 @@ import { formatDateTime } from '../utils/formatters';
 import {
   Calendar,
   Clock,
-  Users,
   CheckSquare,
   Sparkles,
   ArrowRight,
-  TrendingUp,
   Award,
   Video,
   ExternalLink,
+  Filter,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -28,8 +28,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onSimulateJoin,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<MeetingCategory | 'all'>('all');
+  const [onlyMyActions, setOnlyMyActions] = useState<boolean>(false);
 
-  // Filter meetings based on category and search query
+  const currentUser = 'Pravalika Reddy';
+
+  // Filter meetings based on category, search query, and "My Actions" filter
   const filteredMeetings = meetings.filter((meeting) => {
     const matchesCategory = selectedCategory === 'all' || meeting.category === selectedCategory;
     const matchesSearch =
@@ -38,16 +41,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
       meeting.preview.toLowerCase().includes(searchQuery.toLowerCase()) ||
       meeting.participants.some((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
       meeting.transcript.some((t) => t.text.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesCategory && matchesSearch;
+
+    const matchesMyActions =
+      !onlyMyActions ||
+      meeting.actionItems.some(
+        (a) => a.assigneeName.toLowerCase().includes(currentUser.toLowerCase()) && !a.completed
+      );
+
+    return matchesCategory && matchesSearch && matchesMyActions;
   });
 
-  // Calculate aggregates
+  // Calculate high-signal aggregates
   const totalMeetings = meetings.length;
-  const totalMinutes = meetings.reduce((acc, m) => acc + m.durationMinutes, 0);
-  const totalHours = (totalMinutes / 60).toFixed(1);
-  const totalActionItems = meetings.reduce((acc, m) => acc + m.actionItems.length, 0);
-  const completedActionItems = meetings.reduce(
-    (acc, m) => acc + m.actionItems.filter((a) => a.completed).length,
+  const pendingActions = meetings.reduce(
+    (acc, m) => acc + m.actionItems.filter((a) => !a.completed).length,
+    0
+  );
+  const myPendingActions = meetings.reduce(
+    (acc, m) =>
+      acc +
+      m.actionItems.filter(
+        (a) => a.assigneeName.toLowerCase().includes(currentUser.toLowerCase()) && !a.completed
+      ).length,
     0
   );
   const totalDecisions = meetings.reduce((acc, m) => acc + m.decisions.length, 0);
@@ -69,18 +84,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="dashboard-view">
-      {/* Header and Context */}
-      <div className="dashboard-hero">
+      {/* Editorial Header & Activity Ledger Status */}
+      <div className="dashboard-header-strip">
         <div>
-          <h1 className="dashboard-title">Meeting Intelligence</h1>
+          <h1 className="dashboard-title">Meetings & Conversation Ledger</h1>
           <p className="dashboard-subtitle">
-            Synchronized transcripts, automated summaries, decisions, and action items across your team
+            Synchronized audio transcripts, agreed decisions, and next steps across teams
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+
+        <div className="dashboard-header-actions">
           <button
             className="btn-secondary"
             onClick={() => onSimulateJoin('Sprint Retro & Infrastructure Planning')}
+            title="Simulate notetaker bot joining calendar sync"
           >
             <Video size={13} />
             <span>Simulate Notetaker Bot</span>
@@ -88,48 +105,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Metrics Strip */}
-      <div className="metrics-strip">
-        <div className="metric-card">
-          <div className="metric-header">
-            <span>Meetings Recorded</span>
-            <Users size={14} color="#94a3b8" />
-          </div>
-          <div className="metric-value">{totalMeetings}</div>
-          <div className="metric-footnote">{totalHours} total hours captured</div>
+      {/* High-Signal Summary Bar (Replacing Generic SaaS Metric Cards) */}
+      <div className="ledger-summary-strip">
+        <div className="ledger-stat-item">
+          <span className="ledger-stat-label">Recorded Conversations</span>
+          <span className="ledger-stat-value">{totalMeetings}</span>
         </div>
-
-        <div className="metric-card">
-          <div className="metric-header">
-            <span>Action Items</span>
-            <CheckSquare size={14} color="#f59e0b" />
-          </div>
-          <div className="metric-value">
-            {completedActionItems} / {totalActionItems}
-          </div>
-          <div className="metric-footnote">Tasks tracked across conversations</div>
+        <div className="ledger-stat-divider" />
+        <div className="ledger-stat-item">
+          <span className="ledger-stat-label">Pending Action Items</span>
+          <span className="ledger-stat-value" style={{ color: 'var(--accent-amber)' }}>
+            {pendingActions}
+          </span>
+          {myPendingActions > 0 && (
+            <span className="ledger-sub-tag">({myPendingActions} assigned to you)</span>
+          )}
         </div>
-
-        <div className="metric-card">
-          <div className="metric-header">
-            <span>Decisions Logged</span>
-            <Award size={14} color="#10b981" />
-          </div>
-          <div className="metric-value">{totalDecisions}</div>
-          <div className="metric-footnote">Agreed architectural & product milestones</div>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-header">
-            <span>Average Alignment</span>
-            <TrendingUp size={14} color="#38bdf8" />
-          </div>
-          <div className="metric-value">91%</div>
-          <div className="metric-footnote">Positive participant sentiment ratio</div>
+        <div className="ledger-stat-divider" />
+        <div className="ledger-stat-item">
+          <span className="ledger-stat-label">Decisions Logged</span>
+          <span className="ledger-stat-value" style={{ color: 'var(--accent-emerald)' }}>
+            {totalDecisions}
+          </span>
         </div>
       </div>
 
-      {/* Filters Bar */}
+      {/* Filter and View Controls Bar */}
       <div className="dashboard-filters-bar">
         <div className="filter-pills">
           {(['all', 'architecture', 'sales', 'engineering', 'one-on-one'] as const).map(
@@ -149,119 +150,163 @@ export const Dashboard: React.FC<DashboardProps> = ({
           )}
         </div>
 
-        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-          Showing {filteredMeetings.length} of {totalMeetings} conversations
+        <div className="filter-tools-right">
+          <button
+            className={`filter-pill ${onlyMyActions ? 'active' : ''}`}
+            onClick={() => setOnlyMyActions(!onlyMyActions)}
+            title="Filter to meetings with open tasks assigned to you"
+          >
+            <CheckCircle2 size={12} />
+            <span>My Open Tasks Only</span>
+          </button>
+
+          <span className="filter-count-badge">
+            {filteredMeetings.length} of {totalMeetings} conversations
+          </span>
         </div>
       </div>
 
       {/* Meetings List */}
       <div className="meetings-list">
         {filteredMeetings.length === 0 ? (
-          <div
-            style={{
-              padding: '48px',
-              textAlign: 'center',
-              background: 'var(--bg-surface)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            No meetings found matching your filter or search query.
+          <div className="empty-state-box">
+            <Filter size={24} color="#64748b" style={{ marginBottom: 12 }} />
+            <h3 style={{ fontSize: '15px', color: 'var(--text-primary)', marginBottom: 4 }}>
+              No matching meetings found
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto 16px' }}>
+              {onlyMyActions
+                ? "You don't have any incomplete action items in the selected category."
+                : searchQuery
+                ? `No meetings or transcript dialogue matched "${searchQuery}".`
+                : "No meetings found in this category."}
+            </p>
+            {(onlyMyActions || searchQuery || selectedCategory !== 'all') && (
+              <button
+                className="btn-secondary"
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setOnlyMyActions(false);
+                }}
+              >
+                Reset All Filters
+              </button>
+            )}
           </div>
         ) : (
-          filteredMeetings.map((meeting) => (
-            <div
-              key={meeting.id}
-              className="meeting-row-card"
-              onClick={() => onSelectMeeting(meeting.id)}
-            >
-              {/* Main Column */}
-              <div className="meeting-main-info">
-                <div className="meeting-title-row">
-                  <span className={`meeting-category-tag ${getCategoryClass(meeting.category)}`}>
-                    {meeting.category}
-                  </span>
-                  <h3 className="meeting-card-title">{meeting.title}</h3>
-                </div>
+          filteredMeetings.map((meeting) => {
+            const hasMyPending = meeting.actionItems.some(
+              (a) => a.assigneeName.toLowerCase().includes(currentUser.toLowerCase()) && !a.completed
+            );
 
-                <p className="meeting-preview-text">{meeting.preview}</p>
-
-                <div className="meeting-meta-row">
-                  <span className="meta-item">
-                    <Calendar size={13} />
-                    {formatDateTime(meeting.date)}
-                  </span>
-                  <span className="meta-item">
-                    <Clock size={13} />
-                    {meeting.durationMinutes} mins
-                  </span>
-                  {meeting.location && (
-                    <span className="meta-item">
-                      <ExternalLink size={12} />
-                      {meeting.location}
+            return (
+              <div
+                key={meeting.id}
+                className="meeting-row-card"
+                onClick={() => onSelectMeeting(meeting.id)}
+              >
+                {/* Main Meeting Info */}
+                <div className="meeting-main-info">
+                  <div className="meeting-title-row">
+                    <span className={`meeting-category-tag ${getCategoryClass(meeting.category)}`}>
+                      {meeting.category}
                     </span>
-                  )}
-                </div>
-              </div>
+                    <h3 className="meeting-card-title">{meeting.title}</h3>
+                    {hasMyPending && (
+                      <span className="my-task-indicator" title="You have open action items in this meeting">
+                        Action Needed
+                      </span>
+                    )}
+                  </div>
 
-              {/* Stats & Participants Column */}
-              <div className="meeting-stats-col">
-                <div className="participant-avatar-group">
-                  {meeting.participants.slice(0, 5).map((participant) => (
-                    <div
-                      key={participant.id}
-                      className="participant-avatar"
-                      style={{ backgroundColor: participant.avatarColor }}
-                      title={`${participant.name} (${participant.role})`}
+                  <p className="meeting-preview-text">
+                    <strong style={{ color: 'var(--text-primary)' }}>Key Outcome: </strong>
+                    {meeting.preview}
+                  </p>
+
+                  <div className="meeting-meta-row">
+                    <span className="meta-item">
+                      <Calendar size={12} />
+                      {formatDateTime(meeting.date)}
+                    </span>
+                    <span className="meta-item">
+                      <Clock size={12} />
+                      {meeting.durationMinutes} mins
+                    </span>
+                    {meeting.location && (
+                      <span className="meta-item">
+                        <ExternalLink size={12} />
+                        {meeting.location}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Stats & Participants Column */}
+                <div className="meeting-stats-col">
+                  <div className="participant-avatar-group">
+                    {meeting.participants.slice(0, 5).map((participant) => (
+                      <div
+                        key={participant.id}
+                        className="participant-avatar"
+                        style={{ backgroundColor: participant.avatarColor }}
+                        title={`${participant.name} (${participant.role})`}
+                      >
+                        {participant.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')}
+                      </div>
+                    ))}
+                    {meeting.participants.length > 5 && (
+                      <div className="avatar-overflow" title="More participants">
+                        +{meeting.participants.length - 5}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="meeting-highlights-summary">
+                    <span
+                      className="badge-tag"
+                      style={
+                        hasMyPending
+                          ? { borderColor: 'var(--accent-amber)', color: 'var(--accent-amber)' }
+                          : {}
+                      }
                     >
-                      {participant.name
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')}
-                    </div>
-                  ))}
-                  {meeting.participants.length > 5 && (
-                    <div className="avatar-overflow" title="More participants">
-                      +{meeting.participants.length - 5}
-                    </div>
-                  )}
+                      <CheckSquare size={11} color={hasMyPending ? '#f59e0b' : '#94a3b8'} />
+                      {meeting.actionItems.filter((a) => !a.completed).length} Open Tasks
+                    </span>
+                    <span className="badge-tag">
+                      <Award size={11} color="#10b981" />
+                      {meeting.decisions.length} Decisions
+                    </span>
+                    <span className="badge-tag">
+                      <Sparkles size={11} color="#38bdf8" />
+                      {meeting.highlights.length} Highlights
+                    </span>
+                  </div>
                 </div>
 
-                <div className="meeting-highlights-summary">
-                  <span className="badge-tag">
-                    <CheckSquare size={12} color="#f59e0b" />
-                    {meeting.actionItems.length} Actions
-                  </span>
-                  <span className="badge-tag">
-                    <Award size={12} color="#10b981" />
-                    {meeting.decisions.length} Decisions
-                  </span>
-                  <span className="badge-tag">
-                    <Sparkles size={12} color="#38bdf8" />
-                    {meeting.highlights.length} Highlights
+                {/* Action Column */}
+                <div className="meeting-actions-col">
+                  <button
+                    className="btn-secondary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectMeeting(meeting.id);
+                    }}
+                  >
+                    <span>Open Workspace</span>
+                    <ArrowRight size={13} />
+                  </button>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    {meeting.status === 'completed' ? 'Synced' : 'Ready'}
                   </span>
                 </div>
               </div>
-
-              {/* Action Column */}
-              <div className="meeting-actions-col">
-                <button
-                  className="btn-secondary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectMeeting(meeting.id);
-                  }}
-                >
-                  <span>Open Workspace</span>
-                  <ArrowRight size={13} />
-                </button>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                  {meeting.status === 'completed' ? 'Synced' : 'Ready'}
-                </span>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

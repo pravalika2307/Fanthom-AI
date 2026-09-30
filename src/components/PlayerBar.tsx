@@ -12,6 +12,7 @@ interface PlayerBarProps {
   playbackSpeed: number;
   onSpeedChange: (speed: number) => void;
   currentSpeakerName?: string;
+  currentSpeakerColor?: string;
   decisions: Decision[];
   highlights: Highlight[];
 }
@@ -25,6 +26,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
   playbackSpeed,
   onSpeedChange,
   currentSpeakerName,
+  currentSpeakerColor,
   decisions,
   highlights,
 }) => {
@@ -44,9 +46,8 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
     onSeek(newTime);
   };
 
-  const progressPercent = totalDurationSeconds > 0
-    ? (currentTime / totalDurationSeconds) * 100
-    : 0;
+  const progressPercent =
+    totalDurationSeconds > 0 ? (currentTime / totalDurationSeconds) * 100 : 0;
 
   return (
     <div className="player-bar-container">
@@ -58,14 +59,14 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
           ref={scrubberRef}
           className="scrubber-track-wrap"
           onClick={handleScrubberClick}
-          title="Click to seek timestamp"
+          title="Click or drag to scrub playback"
         >
           <div className="scrubber-track">
             <div className="scrubber-fill" style={{ width: `${progressPercent}%` }}>
               <div className="scrubber-handle" />
             </div>
 
-            {/* Decision Markers */}
+            {/* Interactive Decision Markers */}
             {decisions.map((dec) => {
               const markerPos = (dec.timestampSeconds / totalDurationSeconds) * 100;
               return (
@@ -73,12 +74,16 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
                   key={dec.id}
                   className="timeline-marker marker-decision"
                   style={{ left: `${markerPos}%` }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSeek(dec.timestampSeconds);
+                  }}
                   title={`Decision: ${dec.title} (${formatSeconds(dec.timestampSeconds)})`}
                 />
               );
             })}
 
-            {/* Highlight Markers */}
+            {/* Interactive Highlight Markers */}
             {highlights.map((hl) => {
               const markerPos = (hl.timestampSeconds / totalDurationSeconds) * 100;
               return (
@@ -86,7 +91,11 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
                   key={hl.id}
                   className="timeline-marker marker-highlight"
                   style={{ left: `${markerPos}%` }}
-                  title={`Highlight: ${hl.title} (${formatSeconds(hl.timestampSeconds)})`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSeek(hl.timestampSeconds);
+                  }}
+                  title={`Highlight: "${hl.title}" (${formatSeconds(hl.timestampSeconds)})`}
                 />
               );
             })}
@@ -102,25 +111,27 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
           <button
             className="control-btn"
             onClick={() => handleSkip(-10)}
-            title="Rewind 10 seconds (J)"
+            title="Rewind 10 seconds (J key)"
           >
-            <RotateCcw size={15} />
+            <RotateCcw size={14} />
+            <span className="kbd-shortcut-hint">J</span>
           </button>
 
           <button
             className="control-btn control-btn-play"
             onClick={onPlayPauseToggle}
-            title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
+            title={isPlaying ? 'Pause (Spacebar)' : 'Play (Spacebar)'}
           >
-            {isPlaying ? <Pause size={17} /> : <Play size={17} style={{ marginLeft: 2 }} />}
+            {isPlaying ? <Pause size={16} /> : <Play size={16} style={{ marginLeft: 2 }} />}
           </button>
 
           <button
             className="control-btn"
             onClick={() => handleSkip(10)}
-            title="Fast forward 10 seconds (L)"
+            title="Forward 10 seconds (L key)"
           >
-            <RotateCw size={15} />
+            <RotateCw size={14} />
+            <span className="kbd-shortcut-hint">L</span>
           </button>
 
           <div className="speed-selector-group">
@@ -129,6 +140,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
                 key={speed}
                 className={`speed-option-btn ${playbackSpeed === speed ? 'active' : ''}`}
                 onClick={() => onSpeedChange(speed)}
+                title={`Playback speed: ${speed}x`}
               >
                 {speed}x
               </button>
@@ -137,19 +149,39 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
         </div>
 
         <div className="controls-right">
-          {currentSpeakerName && (
+          {currentSpeakerName ? (
             <div className="current-speaker-indicator">
+              <div
+                className="speaker-avatar-tiny"
+                style={{
+                  backgroundColor: currentSpeakerColor || '#38bdf8',
+                  width: 18,
+                  height: 18,
+                  fontSize: 9,
+                }}
+              >
+                {currentSpeakerName
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')}
+              </div>
               <div className="waveform-anim">
                 <div className="waveform-bar" />
                 <div className="waveform-bar" />
                 <div className="waveform-bar" />
               </div>
-              <span>Speaking: <strong>{currentSpeakerName}</strong></span>
+              <span className="current-speaker-text">
+                Speaking: <strong>{currentSpeakerName}</strong>
+              </span>
             </div>
+          ) : (
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              (Audio paused — click play or any timestamp)
+            </span>
           )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-muted)' }}>
-            <Volume2 size={15} />
+            <Volume2 size={14} />
           </div>
         </div>
       </div>

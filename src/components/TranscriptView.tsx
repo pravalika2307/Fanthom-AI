@@ -9,6 +9,7 @@ import {
   Copy,
   Share2,
   Sparkles,
+  X,
 } from 'lucide-react';
 
 interface TranscriptViewProps {
@@ -56,10 +57,9 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
     );
   });
 
-  // Auto-scroll to active segment when playing if desired
+  // Auto-scroll to active segment when playing
   useEffect(() => {
     if (activeSegmentRef.current && containerRef.current) {
-      // Gentle scroll if out of view
       const container = containerRef.current;
       const activeEl = activeSegmentRef.current;
       const containerRect = container.getBoundingClientRect();
@@ -71,6 +71,25 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
     }
   }, [activeSegment?.id]);
 
+  // Helper to highlight matching text in dialogue
+  const renderHighlightedText = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+    return (
+      <>
+        {parts.map((part, i) =>
+          part.toLowerCase() === query.toLowerCase() ? (
+            <mark key={i} className="search-match-highlight">
+              {part}
+            </mark>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="transcript-container" ref={containerRef}>
       {/* Transcript Filter & Count Strip */}
@@ -80,147 +99,162 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
           <input
             type="text"
             className="search-input"
-            placeholder="Search within this transcript..."
+            placeholder="Search dialogue or speakers..."
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
           />
           {localSearch && (
             <button
               onClick={() => setLocalSearch('')}
-              style={{ fontSize: '11px', color: 'var(--text-muted)' }}
+              className="btn-ghost"
+              style={{ padding: '2px 4px' }}
+              title="Clear search"
             >
-              Clear
+              <X size={12} />
             </button>
           )}
         </div>
 
-        <div style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+        <div className="transcript-count-label">
           {filteredSegments.length} of {transcript.length} turns
         </div>
       </div>
 
-      {/* Transcript Turn Segments */}
-      {filteredSegments.length === 0 ? (
-        <div
-          style={{
-            padding: '36px',
-            textAlign: 'center',
-            color: 'var(--text-muted)',
-            fontSize: '13px',
-          }}
-        >
-          No dialogue turns found matching "{localSearch}".
-        </div>
-      ) : (
-        filteredSegments.map((segment) => {
-          const isActive = activeSegment?.id === segment.id;
-          const participant = participantMap.get(segment.speakerId);
-          const avatarColor = participant?.avatarColor || '#3b82f6';
-
-          return (
-            <div
-              key={segment.id}
-              ref={isActive ? activeSegmentRef : null}
-              className={`transcript-segment-card ${isActive ? 'is-active' : ''}`}
+      {/* Continuous Editorial Transcript Flow */}
+      <div className="transcript-flow">
+        {filteredSegments.length === 0 ? (
+          <div className="empty-state-box" style={{ padding: '36px 16px' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              No dialogue turns found matching "{localSearch}".
+            </p>
+            <button
+              className="btn-secondary"
+              onClick={() => setLocalSearch('')}
+              style={{ marginTop: '10px', fontSize: '12px' }}
             >
-              {/* Contextual Actions Bar (Appears on Hover) */}
-              <div className="segment-context-actions">
-                <button
-                  className="segment-action-btn"
-                  onClick={() => onPlayFromHere(segment.startTime)}
-                  title="Play from this moment"
-                >
-                  <Play size={11} />
-                  <span>Play</span>
-                </button>
+              Reset Search
+            </button>
+          </div>
+        ) : (
+          filteredSegments.map((segment) => {
+            const isActive = activeSegment?.id === segment.id;
+            const participant = participantMap.get(segment.speakerId);
+            const avatarColor = participant?.avatarColor || '#38bdf8';
 
-                <button
-                  className="segment-action-btn"
-                  onClick={() =>
-                    onAddActionFromSegment(segment.text, segment.speakerName, segment.startTime)
-                  }
-                  title="Create Action Item from this quote"
-                >
-                  <CheckSquare size={11} />
-                  <span>Action</span>
-                </button>
-
-                <button
-                  className="segment-action-btn"
-                  onClick={() => onToggleHighlightSegment(segment.id)}
-                  title="Bookmark moment"
-                >
-                  <Bookmark size={11} />
-                  <span>Highlight</span>
-                </button>
-
-                <button
-                  className="segment-action-btn"
-                  onClick={() =>
-                    onCopyQuote(segment.text, segment.speakerName, segment.startTime)
-                  }
-                  title="Copy quote with timestamp"
-                >
-                  <Copy size={11} />
-                  <span>Copy</span>
-                </button>
-
-                <button
-                  className="segment-action-btn"
-                  onClick={() => onShareMoment(segment.startTime)}
-                  title="Copy direct timestamp link"
-                >
-                  <Share2 size={11} />
-                  <span>Share</span>
-                </button>
-              </div>
-
-              {/* Segment Header */}
-              <div className="segment-header">
-                <div className="segment-speaker-info">
+            return (
+              <div
+                key={segment.id}
+                ref={isActive ? activeSegmentRef : null}
+                className={`transcript-turn-row ${isActive ? 'is-active' : ''}`}
+              >
+                {/* Speaker Left Gutter / Header */}
+                <div className="turn-gutter">
                   <div
                     className="speaker-avatar-tiny"
                     style={{ backgroundColor: avatarColor }}
-                    title={segment.speakerName}
+                    title={`${segment.speakerName} (${participant?.role || 'Participant'})`}
                   >
                     {segment.speakerName
                       .split(' ')
                       .map((n) => n[0])
                       .join('')}
                   </div>
-                  <span className="speaker-name">{segment.speakerName}</span>
 
-                  <button
-                    className="timestamp-pill"
-                    onClick={() => onSeek(segment.startTime)}
-                    title="Click to seek playback to this moment"
-                  >
-                    {formatSeconds(segment.startTime)}
-                  </button>
+                  <div className="turn-header-info">
+                    <span className="speaker-name">{segment.speakerName}</span>
 
-                  {segment.sentiment === 'concern' && (
-                    <span className="sentiment-badge concern">Concern</span>
-                  )}
-                  {segment.sentiment === 'positive' && (
-                    <span className="sentiment-badge positive">Aligned</span>
+                    <button
+                      className="timestamp-pill"
+                      onClick={() => onSeek(segment.startTime)}
+                      title={`Jump playback to ${formatSeconds(segment.startTime)}`}
+                    >
+                      {formatSeconds(segment.startTime)}
+                    </button>
+
+                    {segment.sentiment === 'concern' && (
+                      <span className="sentiment-badge concern" title="Expressed concern or risk">
+                        Concern
+                      </span>
+                    )}
+                    {segment.sentiment === 'positive' && (
+                      <span className="sentiment-badge positive" title="Strong agreement">
+                        Aligned
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Contextual Action Bar (Placed Inline In Header, Appearing on Hover) */}
+                  <div className="turn-hover-actions">
+                    <button
+                      className="segment-action-btn"
+                      onClick={() => onPlayFromHere(segment.startTime)}
+                      title="Play from this moment"
+                    >
+                      <Play size={11} />
+                      <span>Play</span>
+                    </button>
+
+                    <button
+                      className="segment-action-btn"
+                      onClick={() =>
+                        onAddActionFromSegment(segment.text, segment.speakerName, segment.startTime)
+                      }
+                      title="Create Action Item from this quote"
+                    >
+                      <CheckSquare size={11} />
+                      <span>Action</span>
+                    </button>
+
+                    <button
+                      className="segment-action-btn"
+                      onClick={() => onToggleHighlightSegment(segment.id)}
+                      title="Toggle highlight"
+                    >
+                      <Bookmark size={11} />
+                      <span>Highlight</span>
+                    </button>
+
+                    <button
+                      className="segment-action-btn"
+                      onClick={() =>
+                        onCopyQuote(segment.text, segment.speakerName, segment.startTime)
+                      }
+                      title="Copy quote with attribution"
+                    >
+                      <Copy size={11} />
+                      <span>Copy</span>
+                    </button>
+
+                    <button
+                      className="segment-action-btn"
+                      onClick={() => onShareMoment(segment.startTime)}
+                      title="Copy deep-link timestamp URL"
+                    >
+                      <Share2 size={11} />
+                      <span>Share</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Speech Dialogue Body */}
+                <div className="turn-body">
+                  <p className="turn-text">
+                    {renderHighlightedText(segment.text, localSearch)}
+                  </p>
+
+                  {/* Highlight Tag Pill */}
+                  {segment.highlighted && segment.highlightTag && (
+                    <div className="highlight-tag-badge">
+                      <Sparkles size={11} />
+                      <span>{segment.highlightTag}</span>
+                    </div>
                   )}
                 </div>
               </div>
-
-              {/* Turn Dialogue Text */}
-              <p className="segment-text">{segment.text}</p>
-
-              {/* Highlight Tag Pill */}
-              {segment.highlighted && segment.highlightTag && (
-                <div className="highlight-tag-badge">
-                  <Sparkles size={11} />
-                  <span>{segment.highlightTag}</span>
-                </div>
-              )}
-            </div>
-          );
-        })
-      )}
+            );
+          })
+        )}
+      </div>
     </div>
   );
 };

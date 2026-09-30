@@ -18,6 +18,7 @@ export const App: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [activeTemplate, setActiveTemplate] = useState<SummaryTemplate>('general');
+  const [mobilePane, setMobilePane] = useState<'transcript' | 'intel'>('transcript');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const activeMeeting =
@@ -86,6 +87,10 @@ export const App: React.FC = () => {
     (seg) => playbackTime >= seg.startTime && playbackTime <= seg.endTime
   );
 
+  const currentSpeakerParticipant = activeMeeting?.participants.find(
+    (p) => p.name === currentSegment?.speakerName || p.id === currentSegment?.speakerId
+  );
+
   const showToast = (message: string) => {
     setToastMessage(message);
   };
@@ -151,9 +156,9 @@ export const App: React.FC = () => {
   };
 
   const handleCopyQuote = (text: string, speaker: string, time: number) => {
-    const quoteStr = `"${text}" — ${speaker} [${Math.floor(time / 60)}:${(time % 60)
-      .toString()
-      .padStart(2, '0')}]`;
+    const mins = Math.floor(time / 60);
+    const secs = (time % 60).toString().padStart(2, '0');
+    const quoteStr = `"${text}" — ${speaker} [${mins}:${secs}]`;
     navigator.clipboard?.writeText(quoteStr);
     showToast(`Copied quote from ${speaker}`);
   };
@@ -172,11 +177,11 @@ export const App: React.FC = () => {
   };
 
   const handleShareMoment = (time: number) => {
+    const mins = Math.floor(time / 60);
+    const secs = (time % 60).toString().padStart(2, '0');
     const url = `${window.location.origin}/#meeting=${activeMeeting.id}&t=${time}`;
     navigator.clipboard?.writeText(url);
-    showToast(`Copied direct timestamp link (${Math.floor(time / 60)}:${(time % 60)
-      .toString()
-      .padStart(2, '0')})`);
+    showToast(`Copied deep link to timestamp (${mins}:${secs})`);
   };
 
   const handleExportMeeting = () => {
@@ -239,12 +244,18 @@ ${activeMeeting.actionItems
         ) : (
           <div className="workspace-layout">
             {/* Left Column: Primary Conversation & Player */}
-            <div className="workspace-conversation-column">
+            <div
+              className={`workspace-conversation-column ${
+                mobilePane === 'intel' ? 'mobile-hidden' : ''
+              }`}
+            >
               <WorkspaceHeader
                 meeting={activeMeeting}
                 onBackToDashboard={() => setCurrentView('dashboard')}
                 onShareMeeting={() => handleShareMoment(playbackTime)}
                 onExportMeeting={handleExportMeeting}
+                mobileActivePane={mobilePane}
+                onMobilePaneToggle={setMobilePane}
               />
 
               <PlayerBar
@@ -256,6 +267,7 @@ ${activeMeeting.actionItems
                 playbackSpeed={playbackSpeed}
                 onSpeedChange={setPlaybackSpeed}
                 currentSpeakerName={currentSegment?.speakerName}
+                currentSpeakerColor={currentSpeakerParticipant?.avatarColor}
                 decisions={activeMeeting.decisions}
                 highlights={activeMeeting.highlights}
               />
@@ -277,22 +289,28 @@ ${activeMeeting.actionItems
             </div>
 
             {/* Right Column: Context & Intelligence Rail */}
-            <ContextRail
-              meeting={activeMeeting}
-              activeTemplate={activeTemplate}
-              onTemplateChange={setActiveTemplate}
-              onToggleActionItem={handleToggleActionItem}
-              onAddActionItem={handleAddActionItem}
-              onSeek={(sec) => setPlaybackTime(sec)}
-              onPlayFromHere={(sec) => {
-                setPlaybackTime(sec);
-                setIsPlaying(true);
-              }}
-              onCopyText={(text, label) => {
-                navigator.clipboard?.writeText(text);
-                showToast(label);
-              }}
-            />
+            <div
+              className={`workspace-intel-rail-wrap ${
+                mobilePane === 'transcript' ? 'mobile-hidden' : ''
+              }`}
+            >
+              <ContextRail
+                meeting={activeMeeting}
+                activeTemplate={activeTemplate}
+                onTemplateChange={setActiveTemplate}
+                onToggleActionItem={handleToggleActionItem}
+                onAddActionItem={handleAddActionItem}
+                onSeek={(sec) => setPlaybackTime(sec)}
+                onPlayFromHere={(sec) => {
+                  setPlaybackTime(sec);
+                  setIsPlaying(true);
+                }}
+                onCopyText={(text, label) => {
+                  navigator.clipboard?.writeText(text);
+                  showToast(label);
+                }}
+              />
+            </div>
           </div>
         )}
       </main>

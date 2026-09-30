@@ -8,7 +8,8 @@ import {
   ExternalLink,
   Share2,
   Download,
-  Users,
+  FileText,
+  Zap,
 } from 'lucide-react';
 
 interface WorkspaceHeaderProps {
@@ -16,6 +17,8 @@ interface WorkspaceHeaderProps {
   onBackToDashboard: () => void;
   onShareMeeting: () => void;
   onExportMeeting: () => void;
+  mobileActivePane?: 'transcript' | 'intel';
+  onMobilePaneToggle?: (pane: 'transcript' | 'intel') => void;
 }
 
 export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
@@ -23,34 +26,41 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   onBackToDashboard,
   onShareMeeting,
   onExportMeeting,
+  mobileActivePane = 'transcript',
+  onMobilePaneToggle,
 }) => {
   return (
     <div className="workspace-header">
-      {/* Breadcrumb Row */}
+      {/* Breadcrumb & Navigation */}
       <div className="workspace-breadcrumbs">
         <button className="breadcrumb-link" onClick={onBackToDashboard}>
           <ArrowLeft size={13} />
           <span>Meetings Library</span>
         </button>
-        <span>/</span>
-        <span style={{ textTransform: 'capitalize' }}>{meeting.category}</span>
-        <span>/</span>
-        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-          {meeting.title}
-        </span>
+        <span className="crumb-separator">/</span>
+        <span className="crumb-category">{meeting.category}</span>
+        <span className="crumb-separator">/</span>
+        <span className="crumb-current">{meeting.title}</span>
       </div>
 
-      {/* Main Title Row */}
+      {/* Main Title & Action Row */}
       <div className="workspace-title-row">
-        <div>
+        <div className="workspace-title-block">
           <h2 className="workspace-title">{meeting.title}</h2>
-          <div className="workspace-meta-strip" style={{ marginTop: '8px' }}>
+
+          {/* High-Level Executive Outcome Banner */}
+          <div className="workspace-thesis-bar">
+            <span className="thesis-badge">Core Consensus:</span>
+            <span className="thesis-text">{meeting.preview}</span>
+          </div>
+
+          <div className="workspace-meta-strip">
             <span className="meta-item">
-              <Calendar size={13} />
+              <Calendar size={12} />
               {formatDateTime(meeting.date)}
             </span>
             <span className="meta-item">
-              <Clock size={13} />
+              <Clock size={12} />
               {meeting.durationMinutes} minutes recorded
             </span>
             {meeting.location && (
@@ -62,35 +72,67 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           </div>
         </div>
 
-        {/* Header Actions & Participants */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div className="participant-avatar-group">
-            {meeting.participants.map((p) => (
-              <div
-                key={p.id}
-                className="participant-avatar"
-                style={{ backgroundColor: p.avatarColor }}
-                title={`${p.name} — ${p.role}`}
-              >
-                {p.name
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')}
-              </div>
-            ))}
+        {/* Header Right Actions */}
+        <div className="workspace-header-actions">
+          {/* Participant Avatar Stack */}
+          <div className="participant-avatar-group" title="Meeting Participants">
+            {meeting.participants.map((p) => {
+              const speakingRatio = meeting.stats.speakingRatio[p.id] || 0;
+              return (
+                <div
+                  key={p.id}
+                  className="participant-avatar"
+                  style={{ backgroundColor: p.avatarColor }}
+                  title={`${p.name} — ${p.role} (${speakingRatio}% of conversation)`}
+                >
+                  {p.name
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')}
+                </div>
+              );
+            })}
           </div>
 
-          <button className="btn-secondary" onClick={onExportMeeting} title="Export markdown summary">
+          <button
+            className="btn-secondary"
+            onClick={onExportMeeting}
+            title="Export complete Markdown summary"
+          >
             <Download size={13} />
             <span>Export</span>
           </button>
 
-          <button className="btn-secondary" onClick={onShareMeeting} title="Copy shareable link">
+          <button
+            className="btn-secondary"
+            onClick={onShareMeeting}
+            title="Copy shareable link"
+          >
             <Share2 size={13} />
             <span>Share</span>
           </button>
         </div>
       </div>
+
+      {/* Mobile / Tablet Segmented Pane Switcher (Appears under 1024px) */}
+      {onMobilePaneToggle && (
+        <div className="mobile-pane-switcher">
+          <button
+            className={`pane-switch-btn ${mobileActivePane === 'transcript' ? 'active' : ''}`}
+            onClick={() => onMobilePaneToggle('transcript')}
+          >
+            <FileText size={13} />
+            <span>Transcript</span>
+          </button>
+          <button
+            className={`pane-switch-btn ${mobileActivePane === 'intel' ? 'active' : ''}`}
+            onClick={() => onMobilePaneToggle('intel')}
+          >
+            <Zap size={13} />
+            <span>Brief & Actions</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
