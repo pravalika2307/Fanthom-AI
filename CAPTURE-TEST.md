@@ -15,13 +15,11 @@
 
 Antigravity provides native workspace customization hooks configured via [`.agents/hooks.json`](file:///d:/Projects/Fanthom%20AI/.agents/hooks.json).
 
-### Supported Hook Events Used:
-1. **`Stop`**: Fires when the agent execution loop terminates at the end of each turn. This is the primary event where the final assistant response has been produced and flushed to the transcript.
-2. **`PostInvocation`**: Fires after tool invocations and model passes complete.
+### Supported Hook Event Used:
+* **`PostInvocation`**: The primary capture lifecycle event. It fires after each model invocation cycle finishes. Using `PostInvocation` solely (without combining with `Stop`) avoids redundant executions and eliminates duplicate log entries.
 
 ### Hook Contract & Payload:
-Antigravity executes hook commands (`cmd /c <command>` on Windows) in the directory containing `hooks.json` (`.agents/`).
-The hook receives context on `stdin` containing:
+Antigravity executes the hook command (`cmd /c python capture.py` on Windows) in the directory containing `hooks.json` (`.agents/`), sets `ANTIGRAVITY_CONVERSATION_ID=<session-id>` in the environment, and delivers JSON context on `stdin`:
 ```json
 {
   "conversationId": "<session-id>",
@@ -29,20 +27,19 @@ The hook receives context on `stdin` containing:
   "transcriptPath": "C:\\Users\\Prava\\.gemini\\antigravity-ide\\brain\\<session-id>\\.system_generated\\logs\\transcript.jsonl",
   "artifactDirectoryPath": "C:\\Users\\Prava\\.gemini\\antigravity-ide\\brain\\<session-id>",
   "modelName": "auto",
-  "terminationReason": "model_stop"
+  "invocationNum": 1
 }
 ```
-Antigravity also exports the environment variable:
-`ANTIGRAVITY_CONVERSATION_ID=<session-id>`
 
-The hook handler outputs `{}` to `stdout` to signal successful execution.
+The hook handler outputs `{}` to `stdout` to conform with Antigravity's hook contract.
 
 ### Filtering & Verbatim Extraction:
 [`scripts/capture.py`](file:///d:/Projects/Fanthom%20AI/scripts/capture.py) parses the session's complete transcript (`transcript_full.jsonl` located in the session directory under `brain/<session-id>/.system_generated/logs/`):
 - **User Prompt:** Extracted verbatim from `USER_INPUT` steps (stripping outer IDE wrapper tags `<USER_REQUEST>` if present).
-- **Final Response:** Extracted verbatim from the last `PLANNER_RESPONSE` in that turn.
+- **Final Response:** Extracted verbatim from the completed `PLANNER_RESPONSE` with no tool calls (`tool_calls: []`).
 - **Strictly Excluded:** Chain-of-thought, hidden reasoning, intermediate tool calls (`run_command`, `view_file`, `write_to_file`, etc.), tool outputs, diffs, retries, and internal system steps.
 - **Output:** Written to `.agent-logs/YYYY-MM-DD_HH-MM-SS_<session-id>.md` using the exact 8x log format.
+- **Idempotency:** Reconstructs the complete conversation sequentially on each call, ensuring multiple `PostInvocation` calls never generate duplicate entries.
 
 ---
 
@@ -52,13 +49,6 @@ The hook handler outputs `{}` to `stdout` to signal successful execution.
 ```json
 {
   "agent-capture": {
-    "Stop": [
-      {
-        "type": "command",
-        "command": "python capture.py",
-        "timeout": 30
-      }
-    ],
     "PostInvocation": [
       {
         "type": "command",
@@ -74,7 +64,7 @@ The hook handler outputs `{}` to `stdout` to signal successful execution.
 Automated parser that:
 - Reads stdin non-blockingly using Windows `PeekNamedPipe` (preventing hangs).
 - Resolves session ID and transcript path from stdin, environment variable, or brain storage.
-- Parses all exchanges for the session.
+- Parses only completed exchanges for the session.
 - Generates compliant Markdown logs into `.agent-logs/`.
 
 ---
@@ -84,17 +74,17 @@ Automated parser that:
 1. **Attempt 1 (Debugging Hook):**
    - *Attempt:* Configured `PostToolUse` with a `run_command` matcher writing to `hook_debug.txt`.
    - *Root Cause:* Failed because it only intercepted `run_command` tool calls and captured debug payloads rather than capturing user prompts and final responses.
-   - *Resolution:* Removed `hook_debug.txt` and `test_hook.py`. Switched to `Stop` and `PostInvocation` lifecycle hooks that process the complete transcript.
+   - *Resolution:* Removed `hook_debug.txt` and `test_hook.py`. Switched to `PostInvocation` lifecycle hook that processes the complete transcript.
 
 2. **Attempt 2 (Blocking Windows Stdin Read):**
    - *Attempt:* `capture.py` used `sys.stdin.read()` when `not sys.stdin.isatty()`.
    - *Root Cause:* On Windows, when invoked via subshells without an explicit EOF on the stdin pipe, `sys.stdin.read()` blocked indefinitely.
    - *Resolution:* Implemented `read_stdin_safe()` using `msvcrt` and Windows kernel32 `PeekNamedPipe` to inspect available pipe bytes before reading, ensuring 0ms non-blocking execution.
 
-3. **Attempt 3 (Empty Starting Workspace):**
-   - *Attempt:* Hook did not trigger in turn 1 of the initial session.
-   - *Root Cause:* At the start of the initial IDE session, the workspace was empty (no `.git`, no `.agents/`). Antigravity scans for customizations at session initialization.
-   - *Resolution:* Established `.agents/hooks.json` and verified cross-session persistence across separate sessions.
+3. **Attempt 3 (Stop + PostInvocation Redundancy):**
+   - *Attempt:* Used both `Stop` and `PostInvocation`.
+   - *Root Cause:* Firing both lifecycle hooks could cause double processing of turns.
+   - *Resolution:* Standardized on `PostInvocation` as the single primary capture event.
 
 ---
 

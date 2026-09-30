@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-8x SWE Assignment - Automatic Agent Capture Script
-Captures prompt -> final response for every turn into .agent-logs/
+8x SWE Assignment - Automatic Agent Capture Script (PostInvocation)
+Captures prompt -> final response for every completed turn into .agent-logs/
 """
 
 import os
@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 
 AUTHOR = "pravalika2307"
 PROJECT = "Fanthom-AI"
-MODEL_NAME = "Gemini 3.8 Flash (Medium)"
+DEFAULT_MODEL = "Gemini 3.8 Flash (Medium)"
 TOOL_NAME = "Antigravity IDE"
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -38,44 +38,8 @@ def read_stdin_safe():
     return ""
 
 
-def get_latest_session_id():
-    """Find the most recently modified session in brain directory."""
-    if not BRAIN_BASE.exists():
-        return None
-    sessions = []
-    for item in BRAIN_BASE.iterdir():
-        if item.is_dir() and len(item.name) >= 30:  # UUID format
-            transcript = item / ".system_generated" / "logs" / "transcript_full.jsonl"
-            if transcript.exists():
-                sessions.append((transcript.stat().st_mtime, item.name, transcript))
-            else:
-                transcript_compact = item / ".system_generated" / "logs" / "transcript.jsonl"
-                if transcript_compact.exists():
-                    sessions.append((transcript_compact.stat().st_mtime, item.name, transcript_compact))
-    if not sessions:
-        return None
-    sessions.sort(reverse=True, key=lambda x: x[0])
-    return sessions[0][1], sessions[0][2]
-
-
-def get_all_session_ids():
-    """Find all valid sessions in brain directory."""
-    if not BRAIN_BASE.exists():
-        return []
-    results = []
-    for item in BRAIN_BASE.iterdir():
-        if item.is_dir() and len(item.name) >= 30:
-            transcript = item / ".system_generated" / "logs" / "transcript_full.jsonl"
-            compact = item / ".system_generated" / "logs" / "transcript.jsonl"
-            if transcript.exists():
-                results.append((item.name, transcript))
-            elif compact.exists():
-                results.append((item.name, compact))
-    return results
-
-
 def extract_prompt_text(content):
-    """Extract verbatim prompt, stripping outer system tags if present."""
+    """Extract verbatim prompt, stripping outer system-injected tags if present."""
     if not content:
         return ""
     m = re.search(r"<USER_REQUEST>\s*(.*?)\s*</USER_REQUEST>", content, re.DOTALL)
@@ -86,13 +50,20 @@ def extract_prompt_text(content):
 
 def parse_transcript(transcript_path):
     """
-    Parses transcript_full.jsonl and extracts prompt -> final response exchanges.
-    Filters out chain-of-thought, tool calls, diffs, file reads, and internal reasoning.
+    Parses transcript_full.jsonl and extracts completed prompt -> final response exchanges.
+    Strictly filters out:
+      - chain-of-thought / hidden reasoning
+      - tool calls (run_command, view_file, write_to_file, etc.)
+      - tool outputs / terminal outputs
+      - intermediate model steps
+      - diffs / file reads
+    Only pairs where a final assistant response (PLANNER_RESPONSE with tool_calls=[]) has been produced.
     """
     exchanges = []
     current_prompt = None
     current_prompt_time = None
-    turn_planner_responses = []
+    final_response = None
+    final_response_time = None
 
     with open(transcript_path, "r", encoding="utf-8") as f:
         for line in f:
@@ -111,52 +82,33 @@ def parse_transcript(transcript_path):
             tool_calls = step.get("tool_calls", [])
 
             if step_type == "USER_INPUT" and source == "USER_EXPLICIT":
-                # Finalize previous turn if one was open
-                if current_prompt is not None:
-                    final_resp = "(No final response recorded)"
-                    resp_time = current_prompt_time
-                    for resp_content, resp_ts, resp_tc in reversed(turn_planner_responses):
-                        if resp_content and len(resp_tc) == 0:
-                            final_resp = resp_content
-                            resp_time = resp_ts
-                            break
-                        elif resp_content and final_resp == "(No final response recorded)":
-                            final_resp = resp_content
-                            resp_time = resp_ts
-
+                # Finalize previous turn if a prompt and final response exist
+                if current_prompt and final_response:
                     exchanges.append({
                         "prompt": current_prompt,
                         "prompt_time": current_prompt_time,
-                        "response": final_resp,
-                        "response_time": resp_time,
+                        "response": final_response,
+                        "response_time": final_response_time
                     })
 
                 current_prompt = extract_prompt_text(content)
                 current_prompt_time = created_at
-                turn_planner_responses = []
+                final_response = None
+                final_response_time = None
 
             elif step_type == "PLANNER_RESPONSE" and source == "MODEL":
-                if content:
-                    turn_planner_responses.append((content, created_at, tool_calls))
+                # Only a PLANNER_RESPONSE with no tool calls and non-empty content represents the final response
+                if content and len(tool_calls) == 0:
+                    final_response = content
+                    final_response_time = created_at
 
-    # Finalize the last turn
-    if current_prompt is not None:
-        final_resp = "(In progress / no response)"
-        resp_time = current_prompt_time
-        for resp_content, resp_ts, resp_tc in reversed(turn_planner_responses):
-            if resp_content and len(resp_tc) == 0:
-                final_resp = resp_content
-                resp_time = resp_ts
-                break
-            elif resp_content and final_resp == "(In progress / no response)":
-                final_resp = resp_content
-                resp_time = resp_ts
-
+    # Append last turn if complete
+    if current_prompt and final_response:
         exchanges.append({
             "prompt": current_prompt,
             "prompt_time": current_prompt_time,
-            "response": final_resp,
-            "response_time": resp_time,
+            "response": final_response,
+            "response_time": final_response_time
         })
 
     return exchanges
@@ -182,8 +134,19 @@ def format_date_str(ts_str):
         return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
-def process_session(session_id, transcript_path):
+def resolve_model_name(raw_name):
+    """Resolve human-readable model name."""
+    if not raw_name or raw_name.lower() in ["auto", "none", "unknown", ""]:
+        return DEFAULT_MODEL
+    return raw_name
+
+
+def process_session(session_id, transcript_path, model_name=None):
     """Processes a single session and writes its markdown log."""
+    if not model_name:
+        model_name = DEFAULT_MODEL
+    model_name = resolve_model_name(model_name)
+
     transcript_file = None
     if transcript_path:
         tp = Path(transcript_path)
@@ -217,6 +180,7 @@ def process_session(session_id, transcript_path):
     log_filename = f"{time_prefix}_{session_id}.md"
     log_file_path = LOG_DIR / log_filename
 
+    # Reuse existing file if already named with a timestamp
     existing_files = list(LOG_DIR.glob(f"*_{session_id}.md"))
     if existing_files:
         log_file_path = existing_files[0]
@@ -226,7 +190,7 @@ def process_session(session_id, transcript_path):
     lines.append(f"session_id: {session_id}")
     lines.append(f"date: {session_date}")
     lines.append(f"author: {AUTHOR}")
-    lines.append(f"model: {MODEL_NAME}")
+    lines.append(f"model: {model_name}")
     lines.append(f"tool: {TOOL_NAME}")
     lines.append(f"project: {PROJECT}")
     lines.append(f"total_exchanges: {len(exchanges)}")
@@ -244,14 +208,14 @@ def process_session(session_id, transcript_path):
     for i, ex in enumerate(exchanges, start=1):
         lines.append(f"[LOG_ENTRY type=PROMPT num={i} session={session_id}]")
         lines.append(f"timestamp: {ex['prompt_time']}")
-        lines.append(f"model: {MODEL_NAME}")
+        lines.append(f"model: {model_name}")
         lines.append("")
         lines.append(ex["prompt"])
         lines.append("")
         lines.append("")
         lines.append(f"[LOG_ENTRY type=RESPONSE num={i} session={session_id}]")
         lines.append(f"timestamp: {ex['response_time']}")
-        lines.append(f"model: {MODEL_NAME}")
+        lines.append(f"model: {model_name}")
         lines.append("")
         lines.append(ex["response"])
         lines.append("")
@@ -266,21 +230,16 @@ def process_session(session_id, transcript_path):
 def capture():
     parser = argparse.ArgumentParser()
     parser.add_argument("--session", help="Session ID to capture")
-    parser.add_argument("--all", action="store_true", help="Capture all sessions in brain")
+    parser.add_argument("--transcript", help="Transcript path")
+    parser.add_argument("--model", help="Model name")
     args, _ = parser.parse_known_args()
 
-    if args.all:
-        for sid, tpath in get_all_session_ids():
-            process_session(sid, tpath)
-        print("{}")
-        return
-
     if args.session:
-        process_session(args.session, None)
+        process_session(args.session, args.transcript, args.model)
         print("{}")
         return
 
-    # Check stdin from hooks
+    # 1. Read PostInvocation stdin payload
     stdin_data = read_stdin_safe()
     hook_payload = {}
     if stdin_data:
@@ -291,18 +250,28 @@ def capture():
 
     session_id = hook_payload.get("conversationId") or os.environ.get("ANTIGRAVITY_CONVERSATION_ID")
     transcript_path = hook_payload.get("transcriptPath")
+    model_name = hook_payload.get("modelName")
 
     if not session_id or not transcript_path:
-        latest = get_latest_session_id()
-        if latest:
-            if not session_id:
-                session_id = latest[0]
-            if not transcript_path:
-                transcript_path = str(latest[1])
+        # Fallback to current session directory if available
+        if BRAIN_BASE.exists():
+            sessions = []
+            for item in BRAIN_BASE.iterdir():
+                if item.is_dir() and len(item.name) >= 30:
+                    t_full = item / ".system_generated" / "logs" / "transcript_full.jsonl"
+                    if t_full.exists():
+                        sessions.append((t_full.stat().st_mtime, item.name, t_full))
+            if sessions:
+                sessions.sort(reverse=True, key=lambda x: x[0])
+                if not session_id:
+                    session_id = sessions[0][1]
+                if not transcript_path:
+                    transcript_path = str(sessions[0][2])
 
     if session_id:
-        process_session(session_id, transcript_path)
+        process_session(session_id, transcript_path, model_name)
 
+    # PostInvocation hook contract: must return a valid JSON object
     print("{}")
 
 
