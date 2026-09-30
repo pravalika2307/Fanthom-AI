@@ -7,24 +7,60 @@ import { WorkspaceHeader } from './components/WorkspaceHeader';
 import { PlayerBar } from './components/PlayerBar';
 import { TranscriptView } from './components/TranscriptView';
 import { ContextRail } from './components/ContextRail';
+import { SearchModal } from './components/SearchModal';
 import { Toast } from './components/Toast';
+import { formatSeconds } from './utils/formatters';
 
 export const App: React.FC = () => {
   const [meetings, setMeetings] = useState<Meeting[]>(seededMeetings);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string>('meeting-arch-q4');
   const [currentView, setCurrentView] = useState<'dashboard' | 'workspace'>('workspace');
-  const [globalSearch, setGlobalSearch] = useState<string>('');
   const [playbackTime, setPlaybackTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [activeTemplate, setActiveTemplate] = useState<SummaryTemplate>('general');
   const [mobilePane, setMobilePane] = useState<'transcript' | 'intel'>('transcript');
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
+  const [highlightQuery, setHighlightQuery] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const activeMeeting =
     meetings.find((m) => m.id === selectedMeetingId) || meetings[0];
 
   const totalDurationSeconds = activeMeeting ? activeMeeting.durationMinutes * 60 : 0;
+
+  // URL Hash Parsing & Deep Linking: #meeting=<id>&t=<seconds>&q=<highlightTerm>
+  useEffect(() => {
+    const parseUrlHash = () => {
+      const hash = window.location.hash.replace(/^#/, '');
+      if (!hash) return;
+
+      const params = new URLSearchParams(hash);
+      const meetingParam = params.get('meeting');
+      const timeParam = params.get('t');
+      const queryParam = params.get('q');
+
+      if (meetingParam && meetings.some((m) => m.id === meetingParam)) {
+        setSelectedMeetingId(meetingParam);
+        setCurrentView('workspace');
+
+        if (timeParam !== null) {
+          const parsedTime = parseInt(timeParam, 10);
+          if (!isNaN(parsedTime)) {
+            setPlaybackTime(parsedTime);
+          }
+        }
+
+        if (queryParam) {
+          setHighlightQuery(decodeURIComponent(queryParam));
+        }
+      }
+    };
+
+    parseUrlHash();
+    window.addEventListener('hashchange', parseUrlHash);
+    return () => window.removeEventListener('hashchange', parseUrlHash);
+  }, [meetings]);
 
   // Set default template according to meeting category when switching meetings
   useEffect(() => {
@@ -38,8 +74,6 @@ export const App: React.FC = () => {
     } else {
       setActiveTemplate('general');
     }
-    setPlaybackTime(0);
-    setIsPlaying(false);
   }, [selectedMeetingId]);
 
   // Simulated Playback Timer
@@ -60,15 +94,25 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isPlaying, playbackSpeed, totalDurationSeconds]);
 
-  // Global Keyboard Shortcuts (Space to play/pause, J/L to seek)
+  // Global Keyboard Shortcuts (Cmd/Ctrl + K for search, Space to play/pause, J/L to seek)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K opens search modal anywhere
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsSearchModalOpen((prev) => !prev);
+        return;
+      }
+
       const tagName = (e.target as HTMLElement)?.tagName?.toLowerCase();
       if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
         return;
       }
 
-      if (e.code === 'Space') {
+      if (e.key === '/') {
+        e.preventDefault();
+        setIsSearchModalOpen(true);
+      } else if (e.code === 'Space') {
         e.preventDefault();
         setIsPlaying((prev) => !prev);
       } else if (e.key === 'j' || e.key === 'J') {
@@ -98,6 +142,27 @@ export const App: React.FC = () => {
   const handleSelectMeeting = (id: string) => {
     setSelectedMeetingId(id);
     setCurrentView('workspace');
+    setPlaybackTime(0);
+    setHighlightQuery('');
+    window.location.hash = `#meeting=${id}&t=0`;
+  };
+
+  const handleNavigateToSearchResult = (
+    meetingId: string,
+    timestamp: number,
+    matchTerm: string
+  ) => {
+    setSelectedMeetingId(meetingId);
+    setCurrentView('workspace');
+    setPlaybackTime(timestamp);
+    setHighlightQuery(matchTerm);
+
+    const targetMeeting = meetings.find((m) => m.id === meetingId);
+    window.location.hash = `#meeting=${meetingId}&t=${timestamp}&q=${encodeURIComponent(matchTerm)}`;
+
+    showToast(
+      `Jumped to "${targetMeeting?.title || 'Meeting'}" at ${formatSeconds(timestamp)}`
+    );
   };
 
   const handleToggleActionItem = (actionId: string) => {
@@ -156,9 +221,7 @@ export const App: React.FC = () => {
   };
 
   const handleCopyQuote = (text: string, speaker: string, time: number) => {
-    const mins = Math.floor(time / 60);
-    const secs = (time % 60).toString().padStart(2, '0');
-    const quoteStr = `"${text}" — ${speaker} [${mins}:${secs}]`;
+    const quoteStr = `"${text}" — ${speaker} [${formatSeconds(time)}]`;
     navigator.clipboard?.writeText(quoteStr);
     showToast(`Copied quote from ${speaker}`);
   };
@@ -177,11 +240,10 @@ export const App: React.FC = () => {
   };
 
   const handleShareMoment = (time: number) => {
-    const mins = Math.floor(time / 60);
-    const secs = (time % 60).toString().padStart(2, '0');
     const url = `${window.location.origin}/#meeting=${activeMeeting.id}&t=${time}`;
     navigator.clipboard?.writeText(url);
-    showToast(`Copied deep link to timestamp (${mins}:${secs})`);
+    window.location.hash = `#meeting=${activeMeeting.id}&t=${time}`;
+    showToast(`Copied deep link to timestamp (${formatSeconds(time)})`);
   };
 
   const handleExportMeeting = () => {
@@ -227,8 +289,8 @@ ${activeMeeting.actionItems
         currentView={currentView}
         onViewChange={setCurrentView}
         activeMeetingTitle={activeMeeting?.title}
-        searchQuery={globalSearch}
-        onSearchChange={setGlobalSearch}
+        searchQuery={highlightQuery}
+        onOpenSearchModal={() => setIsSearchModalOpen(true)}
         onSimulateNewMeeting={handleSimulateNewMeeting}
       />
 
@@ -238,7 +300,7 @@ ${activeMeeting.actionItems
           <Dashboard
             meetings={meetings}
             onSelectMeeting={handleSelectMeeting}
-            searchQuery={globalSearch}
+            searchQuery={highlightQuery}
             onSimulateJoin={() => handleSimulateNewMeeting()}
           />
         ) : (
@@ -263,7 +325,10 @@ ${activeMeeting.actionItems
                 totalDurationSeconds={totalDurationSeconds}
                 isPlaying={isPlaying}
                 onPlayPauseToggle={() => setIsPlaying(!isPlaying)}
-                onSeek={(sec) => setPlaybackTime(sec)}
+                onSeek={(sec) => {
+                  setPlaybackTime(sec);
+                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
+                }}
                 playbackSpeed={playbackSpeed}
                 onSpeedChange={setPlaybackSpeed}
                 currentSpeakerName={currentSegment?.speakerName}
@@ -276,10 +341,15 @@ ${activeMeeting.actionItems
                 transcript={activeMeeting.transcript}
                 participants={activeMeeting.participants}
                 currentTime={playbackTime}
-                onSeek={(sec) => setPlaybackTime(sec)}
+                externalSearchTerm={highlightQuery}
+                onSeek={(sec) => {
+                  setPlaybackTime(sec);
+                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
+                }}
                 onPlayFromHere={(sec) => {
                   setPlaybackTime(sec);
                   setIsPlaying(true);
+                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
                 }}
                 onCopyQuote={handleCopyQuote}
                 onAddActionFromSegment={handleAddActionFromSegment}
@@ -300,10 +370,14 @@ ${activeMeeting.actionItems
                 onTemplateChange={setActiveTemplate}
                 onToggleActionItem={handleToggleActionItem}
                 onAddActionItem={handleAddActionItem}
-                onSeek={(sec) => setPlaybackTime(sec)}
+                onSeek={(sec) => {
+                  setPlaybackTime(sec);
+                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
+                }}
                 onPlayFromHere={(sec) => {
                   setPlaybackTime(sec);
                   setIsPlaying(true);
+                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
                 }}
                 onCopyText={(text, label) => {
                   navigator.clipboard?.writeText(text);
@@ -314,6 +388,14 @@ ${activeMeeting.actionItems
           </div>
         )}
       </main>
+
+      {/* Global Cross-Meeting Search Modal (Cmd/Ctrl + K) */}
+      <SearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        meetings={meetings}
+        onNavigateToResult={handleNavigateToSearchResult}
+      />
 
       {/* Toast Notification */}
       {toastMessage && (

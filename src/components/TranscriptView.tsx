@@ -16,6 +16,7 @@ interface TranscriptViewProps {
   transcript: TranscriptSegment[];
   participants: Participant[];
   currentTime: number;
+  externalSearchTerm?: string;
   onSeek: (seconds: number) => void;
   onPlayFromHere: (seconds: number) => void;
   onCopyQuote: (text: string, speaker: string, time: number) => void;
@@ -28,6 +29,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   transcript,
   participants,
   currentTime,
+  externalSearchTerm = '',
   onSeek,
   onPlayFromHere,
   onCopyQuote,
@@ -35,9 +37,16 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   onToggleHighlightSegment,
   onShareMoment,
 }) => {
-  const [localSearch, setLocalSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState(externalSearchTerm);
   const activeSegmentRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sync external search term when passed from cross-meeting search
+  useEffect(() => {
+    if (externalSearchTerm !== undefined) {
+      setLocalSearch(externalSearchTerm);
+    }
+  }, [externalSearchTerm]);
 
   // Map participant id to Participant
   const participantMap = new Map<string, Participant>();
