@@ -69,6 +69,66 @@ export interface MeetingBrief {
   historicalContext: string;
 }
 
+export interface BriefCommitment {
+  id: string;
+  actionItemId?: string;
+  assigneeName: string;
+  description: string;
+  dueDate: string;
+  completed: boolean;
+  sourceMeetingId: string;
+  sourceMeetingTitle: string;
+  sourceTimestampSeconds: number;
+}
+
+export interface BriefDecision {
+  id: string;
+  title: string;
+  category: string;
+  decidedBy: string;
+  sourceMeetingId: string;
+  sourceMeetingTitle: string;
+  sourceTimestampSeconds: number;
+  contextSummary: string;
+}
+
+export interface TalkingPoint {
+  id: string;
+  text: string;
+  checked: boolean;
+  sourceLabel?: string;
+  sourceMeetingId?: string;
+  sourceTimestampSeconds?: number;
+}
+
+export interface UnresolvedItem {
+  id: string;
+  question: string;
+  raisedBy: string;
+  sourceMeetingId: string;
+  sourceMeetingTitle: string;
+  sourceTimestampSeconds: number;
+}
+
+export interface UpcomingMeetingBrief {
+  id: string;
+  upcomingMeetingId: string;
+  heroHeadline: string;
+  keyContextDeltas: string[];
+  relatedPreviousMeeting: {
+    id: string;
+    title: string;
+    date: string;
+    durationMinutes: number;
+    unresolvedCount: number;
+    commitmentsCount: number;
+  };
+  openCommitments: BriefCommitment[];
+  carriedDecisions: BriefDecision[];
+  unresolvedQuestions: UnresolvedItem[];
+  talkingPoints: TalkingPoint[];
+}
+
 export interface Meeting {
   id: string;
   title: string;
@@ -85,6 +145,8 @@ export interface Meeting {
   decisions: Decision[];
   highlights: Highlight[];
   brief?: MeetingBrief;
+  preMeetingBrief?: UpcomingMeetingBrief;
+  relatedMeetingId?: string;
   stats: {
     wordsSpoken: number;
     speakingRatio: Record<string, number>; // participantId -> percentage

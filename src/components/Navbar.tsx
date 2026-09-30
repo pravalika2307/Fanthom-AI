@@ -1,9 +1,9 @@
 import React from 'react';
-import { Search, Bot, Video, LayoutGrid, FileText } from 'lucide-react';
+import { Search, Bot, Video, LayoutGrid, FileText, Compass } from 'lucide-react';
 
 interface NavbarProps {
-  currentView: 'dashboard' | 'workspace';
-  onViewChange: (view: 'dashboard' | 'workspace') => void;
+  currentView: 'dashboard' | 'workspace' | 'brief';
+  onViewChange: (view: 'dashboard' | 'workspace' | 'brief') => void;
   activeMeetingTitle?: string;
   searchQuery: string;
   onOpenSearchModal: () => void;
@@ -35,6 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             className={`nav-switch-btn ${currentView === 'dashboard' ? 'active' : ''}`}
             onClick={() => onViewChange('dashboard')}
+            title="Browse all past and upcoming meetings"
           >
             <LayoutGrid size={13} />
             <span>Library</span>
@@ -42,10 +43,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             className={`nav-switch-btn ${currentView === 'workspace' ? 'active' : ''}`}
             onClick={() => onViewChange('workspace')}
+            title="Review past meeting transcripts, highlights, and decisions"
           >
             <FileText size={13} />
             <span>Workspace</span>
           </button>
+          {currentView === 'brief' && (
+            <button
+              className="nav-switch-btn active"
+              onClick={() => onViewChange('brief')}
+              title="Pre-Meeting Intelligence Brief"
+            >
+              <Compass size={13} />
+              <span>Meeting Brief</span>
+            </button>
+          )}
         </div>
       </div>
 

@@ -10,6 +10,7 @@ import {
   Download,
   FileText,
   Zap,
+  Compass,
 } from 'lucide-react';
 
 interface WorkspaceHeaderProps {
@@ -17,6 +18,7 @@ interface WorkspaceHeaderProps {
   onBackToDashboard: () => void;
   onShareMeeting: () => void;
   onExportMeeting: () => void;
+  onOpenBrief?: (meetingId: string) => void;
   mobileActivePane?: 'transcript' | 'intel';
   onMobilePaneToggle?: (pane: 'transcript' | 'intel') => void;
 }
@@ -26,6 +28,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   onBackToDashboard,
   onShareMeeting,
   onExportMeeting,
+  onOpenBrief,
   mobileActivePane = 'transcript',
   onMobilePaneToggle,
 }) => {
@@ -93,6 +96,22 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
               );
             })}
           </div>
+
+          {onOpenBrief && (
+            <button
+              className="btn-secondary"
+              style={{
+                borderColor: 'rgba(56, 189, 248, 0.4)',
+                color: 'var(--accent-cyan)',
+                backgroundColor: 'rgba(56, 189, 248, 0.06)',
+              }}
+              onClick={() => onOpenBrief(meeting.id)}
+              title="Open Pre-Meeting Intelligence Brief"
+            >
+              <Compass size={13} />
+              <span>Meeting Brief</span>
+            </button>
+          )}
 
           <button
             className="btn-secondary"

@@ -1000,38 +1000,271 @@ export const seededMeetings: Meeting[] = [
     }
   },
   {
-    id: 'meeting-upcoming-cs',
-    title: 'Customer Success Sync: Q3 Churn Risk & Retention Plan',
-    category: 'general',
-    date: '2026-09-30T16:30:00Z',
+    id: 'meeting-arch-rollout',
+    title: 'Q4 Architecture Rollout & Ownership Review',
+    category: 'architecture',
+    date: '2026-10-02T10:00:00Z',
     durationMinutes: 45,
     status: 'upcoming',
-    location: 'Zoom (Simulated Bot Recording)',
-    preview: 'Upcoming review with CS leadership to evaluate tier-2 churn signals and deploy automated engagement workflows.',
+    location: 'Zoom (Room Alpha)',
+    preview: 'Pre-meeting preparation: align on Redis 7 Raft cluster deployment ownership, review staging failover benchmarks, and sign off on dual-write cutover.',
+    relatedMeetingId: 'meeting-arch-q4',
     participants: [
       { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
+      { id: 'u2', name: 'Marcus Vance', email: 'marcus.v@fanthom.ai', role: 'Principal Backend Engineer', avatarColor: '#10b981' },
+      { id: 'u3', name: 'Sarah Lin', email: 'sarah.lin@fanthom.ai', role: 'VP of Engineering', avatarColor: '#8b5cf6' },
+      { id: 'u4', name: 'Dave Kowalski', email: 'dave.k@fanthom.ai', role: 'SRE Infrastructure Lead', avatarColor: '#f59e0b' },
+      { id: 'u5', name: 'Elena Rostova', email: 'elena.r@fanthom.ai', role: 'Data Platform Lead', avatarColor: '#ec4899' },
+      { id: 'u6', name: 'James Thornton', email: 'james.t@fanthom.ai', role: 'Frontend Architecture Lead', avatarColor: '#06b6d4' },
       { id: 'u7', name: 'Rachel Chen', email: 'rachel.c@fanthom.ai', role: 'Director of Product', avatarColor: '#6366f1' },
-      { id: 'u14', name: 'Maya Lin', email: 'maya.l@fanthom.ai', role: 'Head of Customer Success', avatarColor: '#ec4899' }
+      { id: 'u8', name: 'Tom Becker', email: 'tom.b@fanthom.ai', role: 'Security Architect', avatarColor: '#ef4444' }
     ],
     transcript: [],
     summaries: {
-      general: { overview: 'Scheduled meeting. The Fanthom AI recording bot is ready to join and record.', keyTopics: [], decisionsSummary: [], nextSteps: [] },
-      sales: { overview: 'Scheduled meeting.', keyTopics: [], decisionsSummary: [], nextSteps: [] },
-      project: { overview: 'Scheduled meeting.', keyTopics: [], decisionsSummary: [], nextSteps: [] },
-      'one-on-one': { overview: 'Scheduled meeting.', keyTopics: [], decisionsSummary: [], nextSteps: [] }
+      general: { overview: 'Upcoming review to finalize deployment dates and proxy ownership.', keyTopics: [], decisionsSummary: [], nextSteps: [] },
+      sales: { overview: 'Technical rollout sync.', keyTopics: [], decisionsSummary: [], nextSteps: [] },
+      project: { overview: 'Technical rollout sync.', keyTopics: [], decisionsSummary: [], nextSteps: [] },
+      'one-on-one': { overview: 'Technical rollout sync.', keyTopics: [], decisionsSummary: [], nextSteps: [] }
     },
     actionItems: [],
     decisions: [],
     highlights: [],
-    brief: {
-      previousMeetingDate: 'Sept 16, 2026',
-      previousDecisions: ['Flag accounts with less than 3 recorded meetings/month as amber risk.'],
-      openActionItems: ['Maya: Compile list of 12 at-risk accounts for Q3 sync.'],
-      suggestedTalkingPoints: [
-        'Review automated email alert cadence for declining recording activity.',
-        'Analyze adoption rate of new AI Action Item CRM sync.'
+    preMeetingBrief: {
+      id: 'brief-arch-rollout',
+      upcomingMeetingId: 'meeting-arch-rollout',
+      heroHeadline: 'Three key commitments evolved since your last architecture sync.',
+      keyContextDeltas: [
+        'Marcus Vance completed the Redis 7 Raft staging benchmarks, dropping simulated failover p99 to 28ms without data loss.',
+        'Tom Becker confirmed Vault-automated mutual TLS rotation satisfies SOC2 Type II and HIPAA transit controls.',
+        'Elena Rostova flagged that write-through cache eviction still requires a dedicated backend engineer before the canary window opens.'
       ],
-      historicalContext: 'Monthly review between Product and Customer Success ensuring enterprise customers maximize value from meeting intelligence.'
+      relatedPreviousMeeting: {
+        id: 'meeting-arch-q4',
+        title: 'Q4 Core Architecture & Distributed Cache Strategy',
+        date: '2026-09-29T14:00:00Z',
+        durationMinutes: 58,
+        unresolvedCount: 2,
+        commitmentsCount: 3
+      },
+      openCommitments: [
+        {
+          id: 'comm-1',
+          actionItemId: 'a-1',
+          assigneeName: 'Marcus Vance',
+          description: 'Run benchmark comparing Redis 7 Raft cluster failover latency vs current Memcached p99',
+          dueDate: '2026-10-02',
+          completed: false,
+          sourceMeetingId: 'meeting-arch-q4',
+          sourceMeetingTitle: 'Q4 Core Architecture & Distributed Cache Strategy',
+          sourceTimestampSeconds: 38
+        },
+        {
+          id: 'comm-2',
+          actionItemId: 'a-2',
+          assigneeName: 'Pravalika Reddy',
+          description: 'Draft zero-downtime shadow rollout plan with automatic rollback thresholds',
+          dueDate: '2026-10-03',
+          completed: false,
+          sourceMeetingId: 'meeting-arch-q4',
+          sourceMeetingTitle: 'Q4 Core Architecture & Distributed Cache Strategy',
+          sourceTimestampSeconds: 432
+        },
+        {
+          id: 'comm-3',
+          actionItemId: 'a-3',
+          assigneeName: 'Dave Kowalski',
+          description: 'Audit AWS availability zone network peering quotas for Redis cluster topology',
+          dueDate: '2026-10-04',
+          completed: true,
+          sourceMeetingId: 'meeting-arch-q4',
+          sourceMeetingTitle: 'Q4 Core Architecture & Distributed Cache Strategy',
+          sourceTimestampSeconds: 63
+        }
+      ],
+      carriedDecisions: [
+        {
+          id: 'dec-1',
+          title: 'Approve RFC-204: Redis 7 Cluster Migration',
+          category: 'architecture',
+          decidedBy: 'Sarah Lin (VP of Engineering)',
+          sourceMeetingId: 'meeting-arch-q4',
+          sourceMeetingTitle: 'Q4 Core Architecture & Distributed Cache Strategy',
+          sourceTimestampSeconds: 320,
+          contextSummary: 'Replaces standalone Memcached instances with multi-node Redis cluster featuring active read-replicas.'
+        },
+        {
+          id: 'dec-2',
+          title: 'Mandate Write-Through Invalidation Policy',
+          category: 'architecture',
+          decidedBy: 'Elena Rostova (Data Platform Lead)',
+          sourceMeetingId: 'meeting-arch-q4',
+          sourceMeetingTitle: 'Q4 Core Architecture & Distributed Cache Strategy',
+          sourceTimestampSeconds: 231,
+          contextSummary: 'Prohibits write-behind caching to eliminate data loss and comply with GDPR deletion purging requirements.'
+        }
+      ],
+      unresolvedQuestions: [
+        {
+          id: 'unres-1',
+          question: 'Who owns maintaining dual-write synchronization between Memcached and Redis during the 2-week canary phase?',
+          raisedBy: 'Dave Kowalski (SRE Lead)',
+          sourceMeetingId: 'meeting-arch-q4',
+          sourceMeetingTitle: 'Q4 Core Architecture & Distributed Cache Strategy',
+          sourceTimestampSeconds: 432
+        },
+        {
+          id: 'unres-2',
+          question: 'Can the mobile API client handle automatic re-auth if TLS session tickets are refreshed mid-call?',
+          raisedBy: 'James Thornton (Frontend Lead)',
+          sourceMeetingId: 'meeting-arch-q4',
+          sourceMeetingTitle: 'Q4 Core Architecture & Distributed Cache Strategy',
+          sourceTimestampSeconds: 143
+        }
+      ],
+      talkingPoints: [
+        {
+          id: 'tp-1',
+          text: 'Confirm engineering ownership for the Memcached-to-Redis dual-write proxy',
+          checked: false,
+          sourceLabel: 'Q4 Core Architecture · 07:12',
+          sourceMeetingId: 'meeting-arch-q4',
+          sourceTimestampSeconds: 432
+        },
+        {
+          id: 'tp-2',
+          text: 'Review Marcus Vance’s staging failover latency benchmark results',
+          checked: false,
+          sourceLabel: 'Q4 Core Architecture · 00:38',
+          sourceMeetingId: 'meeting-arch-q4',
+          sourceTimestampSeconds: 38
+        },
+        {
+          id: 'tp-3',
+          text: 'Sign off on automated Let’s Encrypt rotation policy with Vault before production cutover',
+          checked: false,
+          sourceLabel: 'Q4 Core Architecture · 02:23',
+          sourceMeetingId: 'meeting-arch-q4',
+          sourceTimestampSeconds: 143
+        },
+        {
+          id: 'tp-4',
+          text: 'Lock down Canary deployment date with SRE on-call rotation',
+          checked: false
+        }
+      ]
+    },
+    stats: {
+      wordsSpoken: 0,
+      speakingRatio: {},
+      sentimentScore: 0
+    }
+  },
+  {
+    id: 'meeting-sales-kickoff',
+    title: 'Acme Corp — Security & CMEK Implementation Kickoff',
+    category: 'sales',
+    date: '2026-10-03T15:00:00Z',
+    durationMinutes: 30,
+    status: 'upcoming',
+    location: 'Google Meet',
+    preview: 'Pre-meeting preparation: verify signed $28/seat 2-year contract, review AWS KMS key policy for tenant CMEK, and introduce dedicated onboarding engineer.',
+    relatedMeetingId: 'meeting-sales-acme',
+    participants: [
+      { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
+      { id: 'u7', name: 'Rachel Chen', email: 'rachel.c@fanthom.ai', role: 'Director of Product', avatarColor: '#6366f1' },
+      { id: 'u10', name: 'Jordan Reed', email: 'jreed@acmecorp.com', role: 'VP of Procurement, Acme Corp', avatarColor: '#84cc16' },
+      { id: 'u11', name: 'Priya Sharma', email: 'psharma@acmecorp.com', role: 'Director of IT Security, Acme Corp', avatarColor: '#a855f7' },
+      { id: 'u2', name: 'Marcus Vance', email: 'marcus.v@fanthom.ai', role: 'Principal Backend Engineer', avatarColor: '#10b981' }
+    ],
+    transcript: [],
+    summaries: {
+      general: { overview: 'Kickoff meeting for CMEK configuration.', keyTopics: [], decisionsSummary: [], nextSteps: [] },
+      sales: { overview: 'Kickoff meeting for CMEK configuration.', keyTopics: [], decisionsSummary: [], nextSteps: [] },
+      project: { overview: 'Kickoff meeting for CMEK configuration.', keyTopics: [], decisionsSummary: [], nextSteps: [] },
+      'one-on-one': { overview: 'Kickoff meeting for CMEK configuration.', keyTopics: [], decisionsSummary: [], nextSteps: [] }
+    },
+    actionItems: [],
+    decisions: [],
+    highlights: [],
+    preMeetingBrief: {
+      id: 'brief-sales-kickoff',
+      upcomingMeetingId: 'meeting-sales-kickoff',
+      heroHeadline: 'Legal approved the $28/seat 2-year contract; CMEK KMS policy requires final review.',
+      keyContextDeltas: [
+        'Jordan Reed routed the 500-seat contract to Acme Corp General Counsel with agreed 99.95% SLA credits.',
+        'Priya Sharma generated the AWS KMS Customer Managed Key ARN for testing in tenant sandbox.',
+        'Sales Engineering provisioned 25 test seats for the IT Security auditing group.'
+      ],
+      relatedPreviousMeeting: {
+        id: 'meeting-sales-acme',
+        title: 'Acme Corp — Enterprise Contract & Custom SLA Review',
+        date: '2026-09-28T16:30:00Z',
+        durationMinutes: 35,
+        unresolvedCount: 1,
+        commitmentsCount: 2
+      },
+      openCommitments: [
+        {
+          id: 'comm-acme-1',
+          assigneeName: 'Priya Sharma',
+          description: 'Provide AWS KMS Key ARN with IAM trust policy allowing Fanthom AI tenant role',
+          dueDate: '2026-10-03',
+          completed: false,
+          sourceMeetingId: 'meeting-sales-acme',
+          sourceMeetingTitle: 'Acme Corp — Enterprise Contract & Custom SLA Review',
+          sourceTimestampSeconds: 120
+        },
+        {
+          id: 'comm-acme-2',
+          assigneeName: 'Rachel Chen',
+          description: 'Deliver countersigned HIPAA Business Associate Agreement (BAA)',
+          dueDate: '2026-10-02',
+          completed: true,
+          sourceMeetingId: 'meeting-sales-acme',
+          sourceMeetingTitle: 'Acme Corp — Enterprise Contract & Custom SLA Review',
+          sourceTimestampSeconds: 240
+        }
+      ],
+      carriedDecisions: [
+        {
+          id: 'dec-acme-1',
+          title: 'Approve $28/seat/mo on 2-Year Contract',
+          category: 'pricing',
+          decidedBy: 'Jordan Reed & Rachel Chen',
+          sourceMeetingId: 'meeting-sales-acme',
+          sourceMeetingTitle: 'Acme Corp — Enterprise Contract & Custom SLA Review',
+          sourceTimestampSeconds: 310,
+          contextSummary: 'Locked in 500 enterprise seats with annual upfront billing and 99.95% availability guarantee.'
+        }
+      ],
+      unresolvedQuestions: [
+        {
+          id: 'unres-acme-1',
+          question: 'Does Acme Corp require KMS key rotation to trigger an automatic re-encryption of past recording transcripts?',
+          raisedBy: 'Priya Sharma (IT Security Director)',
+          sourceMeetingId: 'meeting-sales-acme',
+          sourceMeetingTitle: 'Acme Corp — Enterprise Contract & Custom SLA Review',
+          sourceTimestampSeconds: 195
+        }
+      ],
+      talkingPoints: [
+        {
+          id: 'tp-acme-1',
+          text: 'Confirm receipt of signed 500-seat enterprise order form from Acme Corp Legal',
+          checked: false,
+          sourceLabel: 'Acme Contract Review · 05:10',
+          sourceMeetingId: 'meeting-sales-acme',
+          sourceTimestampSeconds: 310
+        },
+        {
+          id: 'tp-acme-2',
+          text: 'Review KMS encryption policy and verify tenant sandbox connectivity',
+          checked: false,
+          sourceLabel: 'Acme Contract Review · 02:00',
+          sourceMeetingId: 'meeting-sales-acme',
+          sourceTimestampSeconds: 120
+        }
+      ]
     },
     stats: {
       wordsSpoken: 0,
@@ -1040,3 +1273,4 @@ export const seededMeetings: Meeting[] = [
     }
   }
 ];
+

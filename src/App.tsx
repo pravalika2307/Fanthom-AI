@@ -11,13 +11,15 @@ import { SearchModal } from './components/SearchModal';
 import { ActionItemModal } from './components/ActionItemModal';
 import { ShareMomentModal } from './components/ShareMomentModal';
 import { Toast } from './components/Toast';
+import { PreMeetingBriefView } from './components/PreMeetingBriefView';
 import { formatSeconds } from './utils/formatters';
 import { Play } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [meetings, setMeetings] = useState<Meeting[]>(seededMeetings);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string>('meeting-arch-q4');
-  const [currentView, setCurrentView] = useState<'dashboard' | 'workspace'>('workspace');
+  const [selectedBriefMeetingId, setSelectedBriefMeetingId] = useState<string>('meeting-arch-rollout');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'workspace' | 'brief'>('workspace');
   const [playbackTime, setPlaybackTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
@@ -66,18 +68,25 @@ export const App: React.FC = () => {
 
   const totalDurationSeconds = activeMeeting ? activeMeeting.durationMinutes * 60 : 0;
 
-  // URL Hash Parsing & Deep Linking: #meeting=<id>&t=<seconds>&quote=<encodedQuote>&share=1
+  // URL Hash Parsing & Deep Linking: #meeting=<id>&t=<seconds>&quote=<encodedQuote>&share=1 or #brief=<id>
   useEffect(() => {
     const parseUrlHash = () => {
       const hash = window.location.hash.replace(/^#/, '');
       if (!hash) return;
 
       const params = new URLSearchParams(hash);
+      const briefParam = params.get('brief');
       const meetingParam = params.get('meeting');
       const timeParam = params.get('t');
       const queryParam = params.get('q');
       const quoteParam = params.get('quote');
       const isShare = params.get('share') === '1';
+
+      if (briefParam && meetings.some((m) => m.id === briefParam)) {
+        setSelectedBriefMeetingId(briefParam);
+        setCurrentView('brief');
+        return;
+      }
 
       if (meetingParam && meetings.some((m) => m.id === meetingParam)) {
         setSelectedMeetingId(meetingParam);
@@ -216,6 +225,129 @@ export const App: React.FC = () => {
     showToast(
       `Jumped to "${targetMeeting?.title || 'Meeting'}" at ${formatSeconds(timestamp)}`
     );
+  };
+
+  // Pre-Meeting Intelligence Brief Handlers
+  const handleOpenBrief = (meetingId?: string) => {
+    let targetMeeting = meetings.find((m) => m.id === meetingId);
+    if (!targetMeeting) {
+      targetMeeting = meetings.find((m) => m.preMeetingBrief) || meetings[0];
+    }
+
+    // If selected meeting is past meeting but has an upcoming counterpart, link to that
+    if (!targetMeeting.preMeetingBrief) {
+      const relatedUpcoming = meetings.find(
+        (m) => m.preMeetingBrief?.relatedPreviousMeeting?.id === targetMeeting?.id
+      );
+      if (relatedUpcoming) {
+        targetMeeting = relatedUpcoming;
+      } else {
+        // Fallback to primary upcoming meeting
+        targetMeeting = meetings.find((m) => m.preMeetingBrief) || targetMeeting;
+      }
+    }
+
+    setSelectedBriefMeetingId(targetMeeting.id);
+    setCurrentView('brief');
+    window.location.hash = `#brief=${targetMeeting.id}`;
+    showToast(`Opened Pre-Meeting Intelligence Brief for "${targetMeeting.title}"`);
+  };
+
+  const handleOpenSourceMeeting = (meetingId: string, timestamp: number) => {
+    setSelectedMeetingId(meetingId);
+    setCurrentView('workspace');
+    setPlaybackTime(timestamp);
+    setHighlightQuery('');
+    setSharedMomentInfo(null);
+    window.location.hash = `#meeting=${meetingId}&t=${timestamp}`;
+
+    const targetMeeting = meetings.find((m) => m.id === meetingId);
+    showToast(
+      `Jumped to source: "${targetMeeting?.title || 'Meeting'}" at ${formatSeconds(timestamp)}`
+    );
+  };
+
+  const handleEnterMeetingFromBrief = (meetingId: string) => {
+    setSelectedMeetingId(meetingId);
+    setCurrentView('workspace');
+    setPlaybackTime(0);
+    window.location.hash = `#meeting=${meetingId}&t=0`;
+    showToast(`Entered meeting workspace`);
+  };
+
+  const handleToggleCommitment = (commitmentId: string) => {
+    setMeetings((prevMeetings) =>
+      prevMeetings.map((m) => {
+        if (!m.preMeetingBrief) return m;
+        const updatedCommitments = m.preMeetingBrief.openCommitments.map((c) =>
+          c.id === commitmentId ? { ...c, completed: !c.completed } : c
+        );
+        return {
+          ...m,
+          preMeetingBrief: {
+            ...m.preMeetingBrief,
+            openCommitments: updatedCommitments,
+          },
+        };
+      })
+    );
+  };
+
+  const handleToggleTalkingPoint = (pointId: string) => {
+    setMeetings((prevMeetings) =>
+      prevMeetings.map((m) => {
+        if (!m.preMeetingBrief) return m;
+        const updatedPoints = m.preMeetingBrief.talkingPoints.map((tp) =>
+          tp.id === pointId ? { ...tp, checked: !tp.checked } : tp
+        );
+        return {
+          ...m,
+          preMeetingBrief: {
+            ...m.preMeetingBrief,
+            talkingPoints: updatedPoints,
+          },
+        };
+      })
+    );
+  };
+
+  const handleAddTalkingPoint = (meetingId: string, text: string) => {
+    const newPoint = {
+      id: `tp-${Date.now()}`,
+      text,
+      checked: false,
+      isCustom: true,
+    };
+
+    setMeetings((prevMeetings) =>
+      prevMeetings.map((m) => {
+        if (m.id !== meetingId || !m.preMeetingBrief) return m;
+        return {
+          ...m,
+          preMeetingBrief: {
+            ...m.preMeetingBrief,
+            talkingPoints: [...m.preMeetingBrief.talkingPoints, newPoint],
+          },
+        };
+      })
+    );
+    showToast('Added custom preparation prompt');
+  };
+
+  const handleRemoveTalkingPoint = (meetingId: string, pointId: string) => {
+    setMeetings((prevMeetings) =>
+      prevMeetings.map((m) => {
+        if (m.id !== meetingId || !m.preMeetingBrief) return m;
+        return {
+          ...m,
+          preMeetingBrief: {
+            ...m.preMeetingBrief,
+            talkingPoints: m.preMeetingBrief.talkingPoints.filter((tp) => tp.id !== pointId),
+          },
+        };
+      })
+    );
+    showToast('Removed talking point');
   };
 
   // Toggle Action item completed
@@ -414,8 +546,25 @@ ${activeMeeting.actionItems
           <Dashboard
             meetings={meetings}
             onSelectMeeting={handleSelectMeeting}
+            onOpenBrief={handleOpenBrief}
             searchQuery={highlightQuery}
             onSimulateJoin={() => handleSimulateNewMeeting()}
+          />
+        ) : currentView === 'brief' ? (
+          <PreMeetingBriefView
+            meeting={
+              meetings.find((m) => m.id === selectedBriefMeetingId && m.preMeetingBrief) ||
+              meetings.find((m) => m.preMeetingBrief) ||
+              meetings[0]
+            }
+            allMeetings={meetings}
+            onBackToDashboard={() => setCurrentView('dashboard')}
+            onOpenSourceMeeting={handleOpenSourceMeeting}
+            onEnterMeeting={handleEnterMeetingFromBrief}
+            onToggleCommitment={handleToggleCommitment}
+            onToggleTalkingPoint={handleToggleTalkingPoint}
+            onAddTalkingPoint={handleAddTalkingPoint}
+            onRemoveTalkingPoint={handleRemoveTalkingPoint}
           />
         ) : (
           <div className="workspace-layout">
@@ -428,6 +577,7 @@ ${activeMeeting.actionItems
               <WorkspaceHeader
                 meeting={activeMeeting}
                 onBackToDashboard={() => setCurrentView('dashboard')}
+                onOpenBrief={handleOpenBrief}
                 onShareMeeting={() =>
                   handleRequestShareModal(
                     activeMeeting.preview,
