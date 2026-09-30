@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { seededMeetings } from './data/seededMeetings';
-import { Meeting, SummaryTemplate, ActionItem } from './types';
+import { Meeting, SummaryTemplate, ActionItem, Highlight } from './types';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { WorkspaceHeader } from './components/WorkspaceHeader';
@@ -8,8 +8,11 @@ import { PlayerBar } from './components/PlayerBar';
 import { TranscriptView } from './components/TranscriptView';
 import { ContextRail } from './components/ContextRail';
 import { SearchModal } from './components/SearchModal';
+import { ActionItemModal } from './components/ActionItemModal';
+import { ShareMomentModal } from './components/ShareMomentModal';
 import { Toast } from './components/Toast';
 import { formatSeconds } from './utils/formatters';
+import { Play } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [meetings, setMeetings] = useState<Meeting[]>(seededMeetings);
@@ -24,12 +27,46 @@ export const App: React.FC = () => {
   const [highlightQuery, setHighlightQuery] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Action Item Modal state
+  const [actionModal, setActionModal] = useState<{
+    isOpen: boolean;
+    quote: string;
+    speakerName: string;
+    timestamp: number;
+  }>({
+    isOpen: false,
+    quote: '',
+    speakerName: '',
+    timestamp: 0,
+  });
+
+  // Share Moment Modal state
+  const [shareModal, setShareModal] = useState<{
+    isOpen: boolean;
+    quote: string;
+    speakerName: string;
+    speakerRole?: string;
+    speakerColor?: string;
+    timestamp: number;
+  }>({
+    isOpen: false,
+    quote: '',
+    speakerName: '',
+    timestamp: 0,
+  });
+
+  // Deep-link shared moment banner state
+  const [sharedMomentInfo, setSharedMomentInfo] = useState<{
+    quote: string;
+    timestamp: number;
+  } | null>(null);
+
   const activeMeeting =
     meetings.find((m) => m.id === selectedMeetingId) || meetings[0];
 
   const totalDurationSeconds = activeMeeting ? activeMeeting.durationMinutes * 60 : 0;
 
-  // URL Hash Parsing & Deep Linking: #meeting=<id>&t=<seconds>&q=<highlightTerm>
+  // URL Hash Parsing & Deep Linking: #meeting=<id>&t=<seconds>&quote=<encodedQuote>&share=1
   useEffect(() => {
     const parseUrlHash = () => {
       const hash = window.location.hash.replace(/^#/, '');
@@ -39,20 +76,35 @@ export const App: React.FC = () => {
       const meetingParam = params.get('meeting');
       const timeParam = params.get('t');
       const queryParam = params.get('q');
+      const quoteParam = params.get('quote');
+      const isShare = params.get('share') === '1';
 
       if (meetingParam && meetings.some((m) => m.id === meetingParam)) {
         setSelectedMeetingId(meetingParam);
         setCurrentView('workspace');
 
+        let targetTime = 0;
         if (timeParam !== null) {
           const parsedTime = parseInt(timeParam, 10);
           if (!isNaN(parsedTime)) {
+            targetTime = parsedTime;
             setPlaybackTime(parsedTime);
           }
         }
 
         if (queryParam) {
           setHighlightQuery(decodeURIComponent(queryParam));
+        }
+
+        if (quoteParam) {
+          const decodedQuote = decodeURIComponent(quoteParam);
+          setHighlightQuery(decodedQuote);
+          if (isShare) {
+            setSharedMomentInfo({
+              quote: decodedQuote,
+              timestamp: targetTime,
+            });
+          }
         }
       }
     };
@@ -144,6 +196,7 @@ export const App: React.FC = () => {
     setCurrentView('workspace');
     setPlaybackTime(0);
     setHighlightQuery('');
+    setSharedMomentInfo(null);
     window.location.hash = `#meeting=${id}&t=0`;
   };
 
@@ -165,6 +218,7 @@ export const App: React.FC = () => {
     );
   };
 
+  // Toggle Action item completed
   const handleToggleActionItem = (actionId: string) => {
     setMeetings((prevMeetings) =>
       prevMeetings.map((m) => {
@@ -179,6 +233,7 @@ export const App: React.FC = () => {
     );
   };
 
+  // Add Action Item to Meeting
   const handleAddActionItem = (actionData: Omit<ActionItem, 'id'>) => {
     const newId = `action-${Date.now()}`;
     const newItem: ActionItem = {
@@ -196,54 +251,80 @@ export const App: React.FC = () => {
       })
     );
 
-    showToast(`Added action item assigned to ${actionData.assigneeName}`);
+    showToast(`Created action item assigned to ${actionData.assigneeName}`);
   };
 
-  const handleToggleHighlightSegment = (segmentId: string) => {
+  // Save Highlight from Transcript Selection or Turn
+  const handleSaveHighlight = (
+    text: string,
+    speaker: string,
+    time: number,
+    segmentId?: string
+  ) => {
+    const title = text.length > 52 ? `${text.slice(0, 50)}...` : text;
+    const newHighlight: Highlight = {
+      id: `hl-${Date.now()}`,
+      title: title,
+      excerpt: text,
+      speakerName: speaker,
+      timestampSeconds: time,
+      durationSeconds: 15,
+      category: 'quote',
+    };
+
     setMeetings((prevMeetings) =>
       prevMeetings.map((m) => {
         if (m.id !== activeMeeting.id) return m;
         return {
           ...m,
-          transcript: m.transcript.map((seg) =>
-            seg.id === segmentId
-              ? {
-                  ...seg,
-                  highlighted: !seg.highlighted,
-                  highlightTag: seg.highlighted ? undefined : 'Key Takeaway',
-                }
-              : seg
-          ),
+          highlights: [newHighlight, ...m.highlights],
+          transcript: segmentId
+            ? m.transcript.map((seg) =>
+                seg.id === segmentId
+                  ? { ...seg, highlighted: true, highlightTag: 'Quote Highlight' }
+                  : seg
+              )
+            : m.transcript,
         };
       })
     );
-    showToast('Updated segment highlight');
+
+    showToast(`Saved highlight to meeting: "${title}"`);
   };
 
+  // Professional Copy Quote formatting
   const handleCopyQuote = (text: string, speaker: string, time: number) => {
-    const quoteStr = `"${text}" — ${speaker} [${formatSeconds(time)}]`;
+    const quoteStr = `"${text}"\n\n— ${speaker} · ${activeMeeting.title} · ${formatSeconds(time)}`;
     navigator.clipboard?.writeText(quoteStr);
-    showToast(`Copied quote from ${speaker}`);
+    showToast(`Copied quote from ${speaker} to clipboard`);
   };
 
-  const handleAddActionFromSegment = (text: string, speaker: string, time: number) => {
-    const desc = `Follow up on quote by ${speaker}: "${text.slice(0, 75)}..."`;
-    handleAddActionItem({
-      description: desc,
-      assigneeId: activeMeeting.participants[0]?.id || 'u1',
-      assigneeName: activeMeeting.participants[0]?.name || 'Pravalika Reddy',
-      dueDate: '2026-10-06',
-      completed: false,
-      meetingId: activeMeeting.id,
-      timestampSeconds: time,
+  // Open contextual action item modal
+  const handleRequestActionModal = (text: string, speaker: string, time: number) => {
+    setActionModal({
+      isOpen: true,
+      quote: text,
+      speakerName: speaker,
+      timestamp: time,
     });
   };
 
-  const handleShareMoment = (time: number) => {
-    const url = `${window.location.origin}/#meeting=${activeMeeting.id}&t=${time}`;
-    navigator.clipboard?.writeText(url);
-    window.location.hash = `#meeting=${activeMeeting.id}&t=${time}`;
-    showToast(`Copied deep link to timestamp (${formatSeconds(time)})`);
+  // Open share moment modal
+  const handleRequestShareModal = (
+    text: string,
+    speaker: string,
+    time: number,
+    speakerColor?: string
+  ) => {
+    const participant = activeMeeting.participants.find((p) => p.name === speaker);
+    setShareModal({
+      isOpen: true,
+      quote: text,
+      speakerName: speaker,
+      speakerRole: participant?.role || 'Participant',
+      speakerColor: speakerColor || participant?.avatarColor || '#38bdf8',
+      timestamp: time,
+    });
   };
 
   const handleExportMeeting = () => {
@@ -294,6 +375,39 @@ ${activeMeeting.actionItems
         onSimulateNewMeeting={handleSimulateNewMeeting}
       />
 
+      {/* Shared Moment Banner (Appears when opened via shared URL) */}
+      {sharedMomentInfo && currentView === 'workspace' && (
+        <div className="shared-moment-banner">
+          <div className="shared-banner-left">
+            <span className="shared-banner-pill">Shared Moment</span>
+            <span className="shared-banner-quote">"{sharedMomentInfo.quote}"</span>
+            <span style={{ color: 'var(--text-muted)' }}>
+              — {formatSeconds(sharedMomentInfo.timestamp)}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              className="btn-primary"
+              style={{ padding: '3px 8px', fontSize: '11px' }}
+              onClick={() => {
+                setPlaybackTime(sharedMomentInfo.timestamp);
+                setIsPlaying(true);
+              }}
+            >
+              <Play size={11} />
+              <span>Play Moment</span>
+            </button>
+            <button
+              className="btn-ghost"
+              style={{ padding: '3px 6px', fontSize: '11px' }}
+              onClick={() => setSharedMomentInfo(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Area */}
       <main className="main-content">
         {currentView === 'dashboard' ? (
@@ -314,7 +428,14 @@ ${activeMeeting.actionItems
               <WorkspaceHeader
                 meeting={activeMeeting}
                 onBackToDashboard={() => setCurrentView('dashboard')}
-                onShareMeeting={() => handleShareMoment(playbackTime)}
+                onShareMeeting={() =>
+                  handleRequestShareModal(
+                    activeMeeting.preview,
+                    activeMeeting.participants[0]?.name || 'Host',
+                    playbackTime,
+                    activeMeeting.participants[0]?.avatarColor
+                  )
+                }
                 onExportMeeting={handleExportMeeting}
                 mobileActivePane={mobilePane}
                 onMobilePaneToggle={setMobilePane}
@@ -342,6 +463,7 @@ ${activeMeeting.actionItems
                 participants={activeMeeting.participants}
                 currentTime={playbackTime}
                 externalSearchTerm={highlightQuery}
+                sharedQuote={sharedMomentInfo?.quote}
                 onSeek={(sec) => {
                   setPlaybackTime(sec);
                   window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
@@ -352,9 +474,9 @@ ${activeMeeting.actionItems
                   window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
                 }}
                 onCopyQuote={handleCopyQuote}
-                onAddActionFromSegment={handleAddActionFromSegment}
-                onToggleHighlightSegment={handleToggleHighlightSegment}
-                onShareMoment={handleShareMoment}
+                onRequestActionModal={handleRequestActionModal}
+                onRequestShareModal={handleRequestShareModal}
+                onSaveHighlight={handleSaveHighlight}
               />
             </div>
 
@@ -397,7 +519,36 @@ ${activeMeeting.actionItems
         onNavigateToResult={handleNavigateToSearchResult}
       />
 
-      {/* Toast Notification */}
+      {/* Contextual Action Item Creator Modal */}
+      <ActionItemModal
+        isOpen={actionModal.isOpen}
+        onClose={() => setActionModal((prev) => ({ ...prev, isOpen: false }))}
+        quote={actionModal.quote}
+        speakerName={actionModal.speakerName}
+        timestampSeconds={actionModal.timestamp}
+        participants={activeMeeting.participants}
+        onSaveAction={handleAddActionItem}
+        meetingId={activeMeeting.id}
+      />
+
+      {/* Editorial Share Moment Modal */}
+      <ShareMomentModal
+        isOpen={shareModal.isOpen}
+        onClose={() => setShareModal((prev) => ({ ...prev, isOpen: false }))}
+        quote={shareModal.quote}
+        speakerName={shareModal.speakerName}
+        speakerRole={shareModal.speakerRole}
+        speakerColor={shareModal.speakerColor}
+        timestampSeconds={shareModal.timestamp}
+        totalDurationSeconds={totalDurationSeconds}
+        meetingId={activeMeeting.id}
+        meetingTitle={activeMeeting.title}
+        meetingCategory={activeMeeting.category}
+        meetingDate={activeMeeting.date}
+        onCopyFeedback={showToast}
+      />
+
+      {/* Toast Feedback Notification */}
       {toastMessage && (
         <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
       )}
