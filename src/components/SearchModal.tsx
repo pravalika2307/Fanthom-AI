@@ -6,9 +6,10 @@ import {
   Search,
   X,
   Clock,
-  Sparkles,
+  FileText,
   Award,
   CheckSquare,
+  Bookmark,
   MessageSquare,
   ArrowRight,
   CornerDownLeft,
@@ -150,7 +151,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       case 'action_item':
         return <CheckSquare size={12} color="#f59e0b" />;
       case 'highlight':
-        return <Sparkles size={12} color="#38bdf8" />;
+        return <Bookmark size={12} color="#38bdf8" />;
       default:
         return <MessageSquare size={12} color="#94a3b8" />;
     }

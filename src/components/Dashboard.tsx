@@ -5,7 +5,7 @@ import {
   Calendar,
   Clock,
   CheckSquare,
-  Sparkles,
+  Bookmark,
   ArrowRight,
   Award,
   Video,
@@ -301,6 +301,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
+      {/* Clear Editorial Section Header */}
+      <div className="meetings-section-header">
+        <h2 className="meetings-section-title">
+          {activeTab === 'upcoming'
+            ? 'Upcoming Meetings · Prepare'
+            : activeTab === 'all'
+            ? 'Recorded Conversations · Review & Act'
+            : `${activeTab.toUpperCase()} Conversations`}
+        </h2>
+        <span className="meetings-section-desc">
+          {activeTab === 'upcoming'
+            ? 'Review executive briefs, open deliverables, and talking points before entering'
+            : 'Explore synchronized transcripts, decisions, and tasks'}
+        </span>
+      </div>
+
       {/* Meetings List */}
       <div className="meetings-list">
         {filteredMeetings.length === 0 ? (
@@ -439,7 +455,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           {meeting.decisions.length} Decisions
                         </span>
                         <span className="badge-tag">
-                          <Sparkles size={11} color="#38bdf8" />
+                          <Bookmark size={11} color="#38bdf8" />
                           {meeting.highlights.length} Highlights
                         </span>
                       </>

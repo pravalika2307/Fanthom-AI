@@ -494,6 +494,29 @@ input, textarea, select {
   gap: 10px;
 }
 
+.meetings-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 18px 0 12px 0;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.meetings-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.meetings-section-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .meeting-row-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -2421,15 +2444,17 @@ input, textarea, select {
   }
 
   .workspace-conversation-column.mobile-hidden {
-    display: none;
+    display: none !important;
   }
 
+  .workspace-intel-rail-wrap.mobile-hidden,
   .workspace-intel-rail.mobile-hidden {
-    display: none;
+    display: none !important;
   }
 
   .workspace-conversation-column,
-  .workspace-intel-rail {
+  .workspace-intel-rail,
+  .workspace-intel-rail-wrap {
     height: auto;
     min-height: calc(100vh - 120px);
   }
@@ -2459,6 +2484,77 @@ input, textarea, select {
     display: none;
   }
 
+  .dashboard-filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .filter-pills {
+    overflow-x: auto;
+    padding-bottom: 4px;
+    flex-wrap: nowrap;
+  }
+
+  .filter-tools-right {
+    justify-content: space-between;
+  }
+
+  .player-controls-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .controls-right {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 0 10px;
+  }
+
+  .bot-status-indicator {
+    display: none;
+  }
+
+  .brand-pill {
+    display: none;
+  }
+
+  .dashboard-view,
+  .brief-view-container {
+    padding: 12px 10px 60px 10px;
+  }
+
+  .brief-hero-card {
+    padding: 16px 14px;
+  }
+
+  .brief-hero-title {
+    font-size: 19px;
+  }
+
+  .brief-top-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .speed-selector-group {
+    display: none;
+  }
+
+  .search-modal-container,
+  .share-modal-container,
+  .action-modal-container {
+    width: 96vw;
+    max-width: 96vw;
+    margin: 12px auto;
+  }
 }
 
 /* ==========================================================================

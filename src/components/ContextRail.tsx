@@ -12,7 +12,7 @@ import {
   FileText,
   CheckSquare,
   Award,
-  Sparkles,
+  Bookmark,
   Compass,
   Copy,
   Plus,
@@ -155,7 +155,7 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
           onClick={() => setActiveTab('highlights')}
           title="Key moments and soundbites"
         >
-          <Sparkles size={13} />
+          <Bookmark size={13} />
           <span>Highlights</span>
           <span className="tab-badge">{meeting.highlights.length}</span>
         </button>

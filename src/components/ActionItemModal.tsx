@@ -39,7 +39,17 @@ export const ActionItemModal: React.FC<ActionItemModalProps> = ({
       setDescription(initialDesc);
       setAssigneeName(participants[0]?.name || 'Pravalika Reddy');
     }
-  }, [isOpen, quote, speakerName, participants]);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isOpen && e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, quote, speakerName, participants, onClose]);
 
   if (!isOpen) return null;
 

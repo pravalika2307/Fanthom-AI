@@ -49,6 +49,18 @@ export const ShareMomentModal: React.FC<ShareMomentModalProps> = ({
   const [recipientEmail, setRecipientEmail] = useState('');
   const [copied, setCopied] = useState(false);
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isOpen && e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // Build the deterministic share URL
@@ -60,7 +72,7 @@ export const ShareMomentModal: React.FC<ShareMomentModalProps> = ({
   const handleCopyLink = () => {
     navigator.clipboard?.writeText(shareUrl);
     setCopied(true);
-    onCopyFeedback('Copied share link to clipboard');
+    onCopyFeedback('Copied direct moment link to clipboard');
     setTimeout(() => setCopied(false), 2500);
   };
 
@@ -69,8 +81,8 @@ export const ShareMomentModal: React.FC<ShareMomentModalProps> = ({
     navigator.clipboard?.writeText(shareUrl);
     onCopyFeedback(
       recipientEmail.trim()
-        ? `Shared moment link generated and copied for ${recipientEmail}`
-        : 'Shared moment link copied to clipboard'
+        ? `Moment link copied to clipboard (ready to share with ${recipientEmail})`
+        : 'Direct moment link copied to clipboard'
     );
     onClose();
   };

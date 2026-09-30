@@ -8,7 +8,6 @@ import {
   CheckSquare,
   Copy,
   Share2,
-  Sparkles,
   X,
 } from 'lucide-react';
 
@@ -229,7 +228,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
             }}
             title="Save as meeting highlight"
           >
-            <Sparkles size={11} color="var(--accent-amber)" />
+            <Bookmark size={11} color="var(--accent-amber)" />
             <span>Highlight</span>
           </button>
 
@@ -462,7 +461,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
                   {/* Highlight Tag Pill */}
                   {segment.highlighted && segment.highlightTag && (
                     <div className="highlight-tag-badge">
-                      <Sparkles size={11} />
+                      <Bookmark size={11} />
                       <span>{segment.highlightTag}</span>
                     </div>
                   )}
