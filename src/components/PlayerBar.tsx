@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { formatSeconds } from '../utils/formatters';
 import { Play, Pause, RotateCcw, RotateCw } from 'lucide-react';
-import { Decision, Highlight } from '../types';
+import { Decision, Highlight, ActionItem } from '../types';
 
 interface PlayerBarProps {
   currentTime: number;
@@ -15,6 +15,7 @@ interface PlayerBarProps {
   currentSpeakerColor?: string;
   decisions: Decision[];
   highlights: Highlight[];
+  actionItems?: ActionItem[];
 }
 
 export const PlayerBar: React.FC<PlayerBarProps> = ({
@@ -28,8 +29,17 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
   currentSpeakerName,
   decisions,
   highlights,
+  actionItems = [],
 }) => {
   const scrubberRef = useRef<HTMLDivElement>(null);
+  const [hoveredEvent, setHoveredEvent] = React.useState<{
+    type: string;
+    symbol: string;
+    title: string;
+    time: number;
+    color: string;
+    posPct: number;
+  } | null>(null);
 
   const handleScrubberClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!scrubberRef.current) return;
@@ -50,7 +60,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
 
   return (
     <div className="player-bar-quiet">
-      {/* Scrubber and Timeline Markers */}
+      {/* Scrubber and Semantic Event Timeline */}
       <div className="player-timeline-strip">
         <div
           ref={scrubberRef}
@@ -62,38 +72,113 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
             <div className="quiet-scrubber-thumb" />
           </div>
 
-          {/* Quiet Discrete Markers */}
+          {/* Semantic Event Markers: Decisions (◆), Highlights (●), Actions (□) */}
           {decisions.map((dec) => {
             const markerPos = (dec.timestampSeconds / totalDurationSeconds) * 100;
             return (
-              <div
+              <button
                 key={dec.id}
-                className="quiet-marker marker-dec"
+                className="timeline-symbol-pin marker-dec"
                 style={{ left: `${markerPos}%` }}
                 onClick={(e) => {
                   e.stopPropagation();
                   onSeek(dec.timestampSeconds);
                 }}
+                onMouseEnter={() =>
+                  setHoveredEvent({
+                    type: 'Decision',
+                    symbol: '◆',
+                    title: dec.title,
+                    time: dec.timestampSeconds,
+                    color: 'var(--accent-emerald)',
+                    posPct: markerPos,
+                  })
+                }
+                onMouseLeave={() => setHoveredEvent(null)}
                 title={`Decision: ${dec.title} (${formatSeconds(dec.timestampSeconds)})`}
-              />
+              >
+                ◆
+              </button>
             );
           })}
 
           {highlights.map((hl) => {
             const markerPos = (hl.timestampSeconds / totalDurationSeconds) * 100;
             return (
-              <div
+              <button
                 key={hl.id}
-                className="quiet-marker marker-hl"
+                className="timeline-symbol-pin marker-hl"
                 style={{ left: `${markerPos}%` }}
                 onClick={(e) => {
                   e.stopPropagation();
                   onSeek(hl.timestampSeconds);
                 }}
+                onMouseEnter={() =>
+                  setHoveredEvent({
+                    type: 'Highlight',
+                    symbol: '●',
+                    title: hl.title,
+                    time: hl.timestampSeconds,
+                    color: 'var(--accent-cyan)',
+                    posPct: markerPos,
+                  })
+                }
+                onMouseLeave={() => setHoveredEvent(null)}
                 title={`Highlight: "${hl.title}" (${formatSeconds(hl.timestampSeconds)})`}
-              />
+              >
+                ●
+              </button>
             );
           })}
+
+          {actionItems
+            .filter((a) => a.timestampSeconds && a.timestampSeconds > 0)
+            .map((act) => {
+              const markerPos = (act.timestampSeconds! / totalDurationSeconds) * 100;
+              return (
+                <button
+                  key={act.id}
+                  className="timeline-symbol-pin marker-act"
+                  style={{ left: `${markerPos}%` }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSeek(act.timestampSeconds!);
+                  }}
+                  onMouseEnter={() =>
+                    setHoveredEvent({
+                      type: 'Action Item',
+                      symbol: '□',
+                      title: act.description,
+                      time: act.timestampSeconds!,
+                      color: 'var(--accent-amber)',
+                      posPct: markerPos,
+                    })
+                  }
+                  onMouseLeave={() => setHoveredEvent(null)}
+                  title={`Action: ${act.description} (${formatSeconds(act.timestampSeconds!)})`}
+                >
+                  □
+                </button>
+              );
+            })}
+
+          {/* Hover Tooltip */}
+          {hoveredEvent && (
+            <div
+              className="timeline-hover-tooltip"
+              style={{
+                left: `${Math.min(85, Math.max(15, hoveredEvent.posPct))}%`,
+              }}
+            >
+              <div className="tooltip-head">
+                <span className="tooltip-label" style={{ color: hoveredEvent.color }}>
+                  {hoveredEvent.symbol} {hoveredEvent.type}
+                </span>
+                <span className="tooltip-time">{formatSeconds(hoveredEvent.time)}</span>
+              </div>
+              <p className="tooltip-title">{hoveredEvent.title}</p>
+            </div>
+          )}
         </div>
       </div>
 

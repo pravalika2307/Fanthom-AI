@@ -7,6 +7,7 @@ import {
   Filter,
   CheckCircle2,
 } from 'lucide-react';
+import { ConversationFlowMap } from './ConversationFlowMap';
 
 interface DashboardProps {
   meetings: Meeting[];
@@ -108,6 +109,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Signature Centerpiece: Conversation Flow & Meeting Continuity Map */}
+      {activeTab === 'all' && (
+        <ConversationFlowMap
+          meetings={meetings}
+          onSelectMeeting={onSelectMeeting}
+          onOpenBrief={onOpenBrief}
+        />
+      )}
 
       {/* UPCOMING SESSIONS (Quiet Editorial Rows) */}
       {(activeTab === 'all' || activeTab === 'upcoming') && upcomingMeetings.length > 0 && (

@@ -17,6 +17,8 @@ interface TranscriptViewProps {
   currentTime: number;
   externalSearchTerm?: string;
   sharedQuote?: string;
+  activeSpeakerFilter?: string | null;
+  onClearSpeakerFilter?: () => void;
   onSeek: (seconds: number) => void;
   onPlayFromHere: (seconds: number) => void;
   onCopyQuote: (text: string, speaker: string, time: number) => void;
@@ -42,6 +44,8 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   currentTime,
   externalSearchTerm = '',
   sharedQuote = '',
+  activeSpeakerFilter,
+  onClearSpeakerFilter,
   onSeek,
   onPlayFromHere,
   onCopyQuote,
@@ -78,13 +82,18 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
     (seg) => currentTime >= seg.startTime && currentTime <= seg.endTime
   );
 
-  // Filter segments if search query is present
+  // Filter segments if search query or speaker filter is present
   const filteredSegments = transcript.filter((seg) => {
-    if (!localSearch.trim()) return true;
-    return (
+    const matchesSearch =
+      !localSearch.trim() ||
       seg.text.toLowerCase().includes(localSearch.toLowerCase()) ||
-      seg.speakerName.toLowerCase().includes(localSearch.toLowerCase())
-    );
+      seg.speakerName.toLowerCase().includes(localSearch.toLowerCase());
+
+    const matchesSpeaker =
+      !activeSpeakerFilter ||
+      seg.speakerName.toLowerCase() === activeSpeakerFilter.toLowerCase();
+
+    return matchesSearch && matchesSpeaker;
   });
 
   // Auto-scroll to active segment when playing
@@ -316,6 +325,25 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
           {filteredSegments.length} of {transcript.length} turns
         </div>
       </div>
+
+      {/* Active Speaker Filter Pill */}
+      {activeSpeakerFilter && (
+        <div className="transcript-speaker-filter-pill">
+          <span className="filter-pill-text">
+            Showing turns by <strong>{activeSpeakerFilter}</strong> ({filteredSegments.length} turns)
+          </span>
+          {onClearSpeakerFilter && (
+            <button
+              className="filter-clear-btn"
+              onClick={onClearSpeakerFilter}
+              title="Reset speaker filter"
+            >
+              <X size={11} />
+              <span>Show All</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Continuous Editorial Transcript Flow */}
       <div className="transcript-flow">

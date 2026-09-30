@@ -13,6 +13,8 @@ import {
   Compass,
 } from 'lucide-react';
 
+import { MeetingSignals } from './MeetingSignals';
+
 interface WorkspaceHeaderProps {
   meeting: Meeting;
   onBackToDashboard: () => void;
@@ -21,6 +23,8 @@ interface WorkspaceHeaderProps {
   onOpenBrief?: (meetingId: string) => void;
   mobileActivePane?: 'transcript' | 'intel';
   onMobilePaneToggle?: (pane: 'transcript' | 'intel') => void;
+  onSelectTab?: (tab: 'brief' | 'decisions' | 'actions' | 'highlights') => void;
+  onSeek?: (seconds: number) => void;
 }
 
 export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
@@ -31,6 +35,8 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   onOpenBrief,
   mobileActivePane = 'transcript',
   onMobilePaneToggle,
+  onSelectTab,
+  onSeek,
 }) => {
   // Format participants as restrained editorial text
   const primaryParticipants = meeting.participants.slice(0, 3).map((p) => p.name).join(', ');
@@ -74,6 +80,15 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
               {meeting.participants.length} participants: {participantsSummary}
             </span>
           </div>
+
+          {/* Connected Meeting Signals Strip */}
+          {onSelectTab && onSeek && (
+            <MeetingSignals
+              meeting={meeting}
+              onSelectTab={onSelectTab}
+              onSeek={onSeek}
+            />
+          )}
         </div>
 
         {/* Header Right Actions */}

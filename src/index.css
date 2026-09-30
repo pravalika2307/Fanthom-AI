@@ -3551,3 +3551,699 @@ input, textarea, select {
   }
 }
 
+/* ==============================================================
+   VISUAL EVOLUTION: MEETING PULSE & TIMELINE
+   ============================================================== */
+
+.meeting-pulse-container {
+  padding: 12px 28px 14px 28px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: background var(--transition-fast);
+}
+
+.pulse-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pulse-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pulse-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.pulse-legend-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-sym {
+  font-size: 10px;
+}
+
+.pulse-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pulse-toggle-btn {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 2px 7px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pulse-toggle-btn:hover,
+.pulse-toggle-btn.active {
+  color: var(--text-primary);
+  border-color: var(--border-default);
+  background: var(--bg-surface-elevated);
+}
+
+.pulse-time-bounds {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Interactive Track & Bars */
+.pulse-interactive-track {
+  position: relative;
+  height: 38px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.pulse-bars-grid {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 100%;
+  gap: 2px;
+}
+
+.pulse-bar {
+  flex: 1;
+  background: rgba(148, 163, 184, 0.15);
+  border-radius: 1px 1px 0 0;
+  min-height: 4px;
+  transition: height 180ms cubic-bezier(0.16, 1, 0.3, 1), background var(--transition-fast);
+}
+
+.pulse-bar.passed {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+.pulse-playback-needle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text-primary);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  transition: left 80ms linear;
+  z-index: 3;
+}
+
+/* Semantic Pins on Pulse */
+.pulse-markers-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.pulse-marker-pin {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  width: 17px;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  font-size: 9.5px;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color var(--transition-fast);
+  z-index: 2;
+  padding: 0;
+}
+
+.pulse-marker-pin:hover {
+  transform: translate(-50%, -65%) scale(1.18);
+  border-color: var(--text-primary);
+  z-index: 4;
+}
+
+.pulse-hover-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 260px;
+  z-index: 10;
+  animation: fadeInTooltip 140ms ease-out forwards;
+}
+
+.tooltip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.tooltip-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tooltip-time {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.tooltip-title {
+  font-size: 11.5px;
+  color: var(--text-primary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Conversation Rhythm Drawer */
+.pulse-rhythm-strip {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: fadeInTooltip 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rhythm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rhythm-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.rhythm-clear-btn {
+  font-size: 11px;
+  color: var(--accent-cyan);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.rhythm-clear-btn:hover {
+  text-decoration: underline;
+}
+
+.rhythm-speakers-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px 12px;
+}
+
+.rhythm-speaker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.rhythm-speaker-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.rhythm-speaker-row.selected {
+  background: rgba(255, 255, 255, 0.07);
+  outline: 1px solid var(--border-default);
+}
+
+.rhythm-speaker-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rhythm-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.rhythm-bar-fill {
+  height: 100%;
+  background: var(--text-secondary);
+  border-radius: 2px;
+  transition: width 220ms ease-out;
+}
+
+.rhythm-pct {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+  width: 24px;
+  text-align: right;
+}
+
+/* ==============================================================
+   MEETING SIGNALS STRIP (Header)
+   ============================================================== */
+
+.meeting-signals-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.signal-node-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 2px 7px;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.signal-node-btn:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-default);
+}
+
+.signal-node-icon {
+  font-size: 10px;
+}
+
+.signal-node-val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.signal-node-label {
+  color: var(--text-secondary);
+}
+
+.signal-connector-dot {
+  color: var(--border-default);
+  font-size: 12px;
+}
+
+/* ==============================================================
+   TIMELINE SEMANTIC PINS & TOOLTIPS (PlayerBar)
+   ============================================================== */
+
+.timeline-symbol-pin {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8.5px;
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+  transition: transform 150ms ease-out, border-color var(--transition-fast);
+}
+
+.timeline-symbol-pin:hover {
+  transform: translate(-50%, -50%) scale(1.3);
+  border-color: var(--text-primary);
+  z-index: 4;
+}
+
+.timeline-symbol-pin.marker-dec {
+  color: var(--accent-emerald);
+}
+
+.timeline-symbol-pin.marker-hl {
+  color: var(--accent-cyan);
+}
+
+.timeline-symbol-pin.marker-act {
+  color: var(--accent-amber);
+}
+
+.timeline-hover-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 5px 9px;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 250px;
+  z-index: 10;
+  animation: fadeInTooltip 140ms ease-out forwards;
+}
+
+/* Speaker filter pill in TranscriptView */
+.transcript-speaker-filter-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.filter-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 1px 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.filter-clear-btn:hover {
+  background: var(--bg-surface-elevated);
+}
+
+/* ==============================================================
+   DASHBOARD: CONVERSATION FLOW & CONTINUITY MAP
+   ============================================================== */
+
+.conversation-flow-section {
+  margin-bottom: 32px;
+  padding: 20px 22px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast);
+}
+
+.flow-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.flow-eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.flow-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.flow-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.flow-streams-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.flow-stream-column {
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+
+.stream-lane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.stream-category {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.stream-status {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.flow-node-tree {
+  display: flex;
+  flex-direction: column;
+}
+
+.flow-node {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.flow-node:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-default);
+  transform: translateY(-1px);
+}
+
+.node-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.node-indicator.past {
+  background: var(--text-muted);
+}
+
+.node-indicator.upcoming {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+}
+
+.node-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.node-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.node-badge-type {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.node-badge-type.upcoming {
+  color: var(--accent-cyan);
+}
+
+.node-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.node-action-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--accent-cyan);
+  margin-top: 4px;
+}
+
+/* Connector Spine */
+.flow-connector-spine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding: 10px 0;
+}
+
+.spine-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-default);
+  left: 20px;
+}
+
+.spine-payload-box {
+  margin-left: 36px;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.spine-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.spine-icon {
+  font-size: 9px;
+  color: var(--text-secondary);
+}
+
+.spine-arrow {
+  margin-left: 20px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1;
+  margin-top: 2px;
+}
+
+/* Animation keyframes */
+@keyframes fadeInTooltip {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 2px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .flow-streams-grid {
+    grid-template-columns: 1fr;
+  }
+  .pulse-legend-strip {
+    display: none;
+  }
+}
+

@@ -12,6 +12,7 @@ import { ActionItemModal } from './components/ActionItemModal';
 import { ShareMomentModal } from './components/ShareMomentModal';
 import { Toast } from './components/Toast';
 import { PreMeetingBriefView } from './components/PreMeetingBriefView';
+import { MeetingPulse } from './components/MeetingPulse';
 import { formatSeconds } from './utils/formatters';
 import { Play } from 'lucide-react';
 
@@ -23,6 +24,10 @@ export const App: React.FC = () => {
   const [playbackTime, setPlaybackTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  const [speakerFilter, setSpeakerFilter] = useState<string | null>(null);
+  const [indexTab, setIndexTab] = useState<
+    'brief' | 'decisions' | 'actions' | 'highlights' | 'context'
+  >('brief');
   const [activeTemplate, setActiveTemplate] = useState<SummaryTemplate>('general');
   const [mobilePane, setMobilePane] = useState<'transcript' | 'intel'>('transcript');
   const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
@@ -589,6 +594,25 @@ ${activeMeeting.actionItems
                 onExportMeeting={handleExportMeeting}
                 mobileActivePane={mobilePane}
                 onMobilePaneToggle={setMobilePane}
+                onSelectTab={(tab) => setIndexTab(tab)}
+                onSeek={(sec) => {
+                  setPlaybackTime(sec);
+                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
+                }}
+              />
+
+              {/* Meeting Pulse: Timeline Activity, Markers & Rhythm */}
+              <MeetingPulse
+                meeting={activeMeeting}
+                currentTime={playbackTime}
+                totalDurationSeconds={totalDurationSeconds}
+                onSeek={(sec) => {
+                  setPlaybackTime(sec);
+                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
+                }}
+                activeSpeakerFilter={speakerFilter}
+                onSpeakerFilterChange={setSpeakerFilter}
+                onSelectIndexTab={(tab) => setIndexTab(tab)}
               />
 
               <PlayerBar
@@ -606,6 +630,7 @@ ${activeMeeting.actionItems
                 currentSpeakerColor={currentSpeakerParticipant?.avatarColor}
                 decisions={activeMeeting.decisions}
                 highlights={activeMeeting.highlights}
+                actionItems={activeMeeting.actionItems}
               />
 
               <TranscriptView
@@ -614,6 +639,8 @@ ${activeMeeting.actionItems
                 currentTime={playbackTime}
                 externalSearchTerm={highlightQuery}
                 sharedQuote={sharedMomentInfo?.quote}
+                activeSpeakerFilter={speakerFilter}
+                onClearSpeakerFilter={() => setSpeakerFilter(null)}
                 onSeek={(sec) => {
                   setPlaybackTime(sec);
                   window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
@@ -642,6 +669,8 @@ ${activeMeeting.actionItems
                 onTemplateChange={setActiveTemplate}
                 onToggleActionItem={handleToggleActionItem}
                 onAddActionItem={handleAddActionItem}
+                activeTab={indexTab}
+                onTabChange={setIndexTab}
                 onSeek={(sec) => {
                   setPlaybackTime(sec);
                   window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;

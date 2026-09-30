@@ -25,6 +25,8 @@ interface ContextRailProps {
   onSeek: (seconds: number) => void;
   onPlayFromHere: (seconds: number) => void;
   onCopyText: (text: string, label: string) => void;
+  activeTab?: 'brief' | 'decisions' | 'actions' | 'highlights' | 'context';
+  onTabChange?: (tab: 'brief' | 'decisions' | 'actions' | 'highlights' | 'context') => void;
 }
 
 export const ContextRail: React.FC<ContextRailProps> = ({
@@ -36,10 +38,17 @@ export const ContextRail: React.FC<ContextRailProps> = ({
   onSeek,
   onPlayFromHere,
   onCopyText,
+  activeTab: activeTabProp,
+  onTabChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<
+  const [internalTab, setInternalTab] = useState<
     'brief' | 'decisions' | 'actions' | 'highlights' | 'context'
   >('brief');
+  const activeTab = activeTabProp || internalTab;
+  const setActiveTab = (tab: 'brief' | 'decisions' | 'actions' | 'highlights' | 'context') => {
+    setInternalTab(tab);
+    onTabChange?.(tab);
+  };
 
   const [actionsFilter, setActionsFilter] = useState<'all' | 'my' | 'open' | 'done'>('all');
   const [isAddingAction, setIsAddingAction] = useState(false);
