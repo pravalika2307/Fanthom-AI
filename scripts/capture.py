@@ -2,6 +2,7 @@
 """
 8x SWE Assignment - Automatic Agent Capture Script (PostInvocation)
 Captures prompt -> final response for every completed turn into .agent-logs/
+Dynamically resolves actual selected model from Antigravity session metadata/transcript.
 """
 
 import os
@@ -14,12 +15,12 @@ from datetime import datetime, timezone
 
 AUTHOR = "pravalika2307"
 PROJECT = "Fanthom-AI"
-DEFAULT_MODEL = "Gemini 3.8 Flash (Medium)"
 TOOL_NAME = "Antigravity IDE"
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LOG_DIR = REPO_ROOT / ".agent-logs"
 BRAIN_BASE = Path(r"C:\Users\Prava\.gemini\antigravity-ide\brain")
+CONV_DIR = Path(r"C:\Users\Prava\.gemini\antigravity-ide\conversations")
 
 
 def read_stdin_safe():
@@ -46,6 +47,70 @@ def extract_prompt_text(content):
     if m:
         return m.group(1).strip()
     return content.strip()
+
+
+def resolve_actual_model_name(session_id, transcript_path=None, hook_model=None):
+    """
+    Dynamically investigates Antigravity session metadata and transcript to determine
+    the actual resolved model rather than guessing or defaulting to a hardcoded string.
+    """
+    # 1. If hook payload explicitly provides a resolved model (not auto/none/unknown)
+    if hook_model and hook_model.lower() not in ["auto", "none", "unknown", ""]:
+        return hook_model
+
+    # 2. Check Antigravity's SQLite conversation database
+    db_path = CONV_DIR / f"{session_id}.db"
+    if db_path.exists():
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(db_path))
+            cur = conn.cursor()
+            cur.execute("SELECT data FROM gen_metadata ORDER BY idx DESC LIMIT 1;")
+            row = cur.fetchone()
+            if row:
+                data = row[0]
+                # Protobuf tag \xe2\x01 (Field 28) stores the exact model ID
+                idx = data.find(b"\xe2\x01")
+                raw_id = None
+                if idx != -1 and idx + 2 < len(data):
+                    length = data[idx + 2]
+                    raw_id = data[idx + 3 : idx + 3 + length].decode("utf-8", errors="ignore")
+
+                # Check for human-readable display names stored in gen_metadata
+                display_matches = re.findall(rb"(?:Gemini|Claude|GPT) [0-9a-zA-Z. ()-]+", data)
+                for dm in display_matches:
+                    ds = dm.decode("utf-8", errors="ignore").strip()
+                    if "(" in ds and ")" in ds and len(ds) < 50:
+                        return ds
+
+                if raw_id:
+                    return raw_id
+        except Exception:
+            pass
+
+    # 3. Check transcript_full.jsonl for explicit model selection events
+    if transcript_path:
+        tp = Path(transcript_path)
+        full_tp = tp.parent / "transcript_full.jsonl"
+        candidate_path = full_tp if full_tp.exists() else tp
+        if candidate_path.exists():
+            try:
+                with open(candidate_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if "USER_SETTINGS_CHANGE" in line and "Model Selection" in line:
+                            # Match model selection with dots and parentheses
+                            m = re.search(r"Model Selection from \S+ to\s+([^<\n\r]+?)(?:\.\s|\.\n|\.$)", line)
+                            if not m:
+                                m = re.search(r"Model Selection from \S+ to\s+([^<\n\r]+)", line)
+                            if m:
+                                val = m.group(1).strip()
+                                if val.endswith("."):
+                                    val = val[:-1].strip()
+                                return val
+            except Exception:
+                pass
+
+    return "Unknown"
 
 
 def parse_transcript(transcript_path):
@@ -134,19 +199,8 @@ def format_date_str(ts_str):
         return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
-def resolve_model_name(raw_name):
-    """Resolve human-readable model name."""
-    if not raw_name or raw_name.lower() in ["auto", "none", "unknown", ""]:
-        return DEFAULT_MODEL
-    return raw_name
-
-
-def process_session(session_id, transcript_path, model_name=None):
+def process_session(session_id, transcript_path, raw_model_name=None):
     """Processes a single session and writes its markdown log."""
-    if not model_name:
-        model_name = DEFAULT_MODEL
-    model_name = resolve_model_name(model_name)
-
     transcript_file = None
     if transcript_path:
         tp = Path(transcript_path)
@@ -166,6 +220,9 @@ def process_session(session_id, transcript_path, model_name=None):
 
     if not transcript_file or not transcript_file.exists():
         return False
+
+    # Dynamically resolve actual model from metadata/transcript
+    model_name = resolve_actual_model_name(session_id, transcript_file, raw_model_name)
 
     exchanges = parse_transcript(transcript_file)
     if not exchanges:
@@ -253,7 +310,7 @@ def capture():
     model_name = hook_payload.get("modelName")
 
     if not session_id or not transcript_path:
-        # Fallback to current session directory if available
+        # Fallback to latest active session directory
         if BRAIN_BASE.exists():
             sessions = []
             for item in BRAIN_BASE.iterdir():
