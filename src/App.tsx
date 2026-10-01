@@ -37,6 +37,17 @@ export const App: React.FC = () => {
   // Native HTMLAudioElement reference for genuine spoken audio playback
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Audio volume and mute control
+  const [audioVolume, setAudioVolume] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('fanthom_player_volume');
+      return saved !== null ? parseFloat(saved) : 0.85;
+    } catch {
+      return 0.85;
+    }
+  });
+  const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
+
   // Action Item Modal state
   const [actionModal, setActionModal] = useState<{
     isOpen: boolean;
@@ -218,6 +229,14 @@ export const App: React.FC = () => {
     }
   }, [playbackSpeed]);
 
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.volume = audioVolume;
+      audio.muted = isAudioMuted;
+    }
+  }, [audioVolume, isAudioMuted]);
+
   // Fallback timer ONLY when meeting has no real audio file (never run when audioUrl is present)
   useEffect(() => {
     if (!isPlaying || activeMeeting.audioUrl) return;
@@ -235,6 +254,20 @@ export const App: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [isPlaying, playbackSpeed, totalDurationSeconds, activeMeeting.audioUrl]);
+
+  const handleVolumeChange = (vol: number) => {
+    setAudioVolume(vol);
+    if (vol > 0 && isAudioMuted) {
+      setIsAudioMuted(false);
+    }
+    try {
+      localStorage.setItem('fanthom_player_volume', vol.toString());
+    } catch {}
+  };
+
+  const handleToggleMute = () => {
+    setIsAudioMuted((prev) => !prev);
+  };
 
   const handleSeek = (newTime: number) => {
     let targetTime = newTime;
@@ -295,7 +328,7 @@ export const App: React.FC = () => {
     }
   };
 
-  // Global Keyboard Shortcuts (Cmd/Ctrl + K for search, Space to play/pause, J/L to seek)
+  // Global Keyboard Shortcuts (Cmd/Ctrl + K for search, Space to play/pause, J/L to seek, M to mute)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
@@ -319,6 +352,8 @@ export const App: React.FC = () => {
         handleSeek(playbackTime - 10);
       } else if (e.key === 'l' || e.key === 'L') {
         handleSeek(playbackTime + 10);
+      } else if (e.key === 'm' || e.key === 'M') {
+        handleToggleMute();
       }
     };
 
@@ -813,6 +848,10 @@ ${activeMeeting.actionItems
                 onSeek={handleSeek}
                 playbackSpeed={playbackSpeed}
                 onSpeedChange={setPlaybackSpeed}
+                volume={audioVolume}
+                isMuted={isAudioMuted}
+                onVolumeChange={handleVolumeChange}
+                onToggleMute={handleToggleMute}
                 currentSpeakerName={currentSegment?.speakerName}
                 currentSpeakerColor={currentSpeakerParticipant?.avatarColor}
                 decisions={activeMeeting.decisions}

@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { formatSeconds } from '../utils/formatters';
-import { Play, Pause, RotateCcw, RotateCw } from 'lucide-react';
+import { Play, Pause, RotateCcw, RotateCw, Volume2, Volume1, VolumeX } from 'lucide-react';
 import { Decision, Highlight, ActionItem } from '../types';
 
 interface PlayerBarProps {
@@ -11,6 +11,10 @@ interface PlayerBarProps {
   onSeek: (seconds: number) => void;
   playbackSpeed: number;
   onSpeedChange: (speed: number) => void;
+  volume?: number;
+  isMuted?: boolean;
+  onVolumeChange?: (vol: number) => void;
+  onToggleMute?: () => void;
   currentSpeakerName?: string;
   currentSpeakerColor?: string;
   decisions: Decision[];
@@ -27,6 +31,10 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
   onSeek,
   playbackSpeed,
   onSpeedChange,
+  volume = 1,
+  isMuted = false,
+  onVolumeChange,
+  onToggleMute,
   currentSpeakerName,
   decisions,
   highlights,
@@ -260,6 +268,34 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
               </button>
             ))}
           </div>
+
+          {onVolumeChange && onToggleMute && (
+            <div className="player-volume-cluster">
+              <button
+                className="player-btn-text volume-btn"
+                onClick={onToggleMute}
+                title={isMuted ? 'Unmute (M key)' : 'Mute (M key)'}
+              >
+                {isMuted || volume === 0 ? (
+                  <VolumeX size={13} />
+                ) : volume < 0.5 ? (
+                  <Volume1 size={13} />
+                ) : (
+                  <Volume2 size={13} />
+                )}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={isMuted ? 0 : volume}
+                onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+                className="volume-slider"
+                title={`Volume: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
