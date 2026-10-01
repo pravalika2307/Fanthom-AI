@@ -8,6 +8,7 @@ interface NavbarProps {
   searchQuery: string;
   onOpenSearchModal: () => void;
   onSimulateNewMeeting: () => void;
+  onOpenShortcuts?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -17,6 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   searchQuery,
   onOpenSearchModal,
   onSimulateNewMeeting,
+  onOpenShortcuts,
 }) => {
   return (
     <header className="navbar">
@@ -72,6 +74,17 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       <div className="nav-right">
+        {onOpenShortcuts && (
+          <button
+            className="btn-icon-subtle"
+            onClick={onOpenShortcuts}
+            title="Keyboard shortcuts (?)"
+            aria-label="Keyboard shortcuts"
+          >
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>?</span>
+          </button>
+        )}
+
         <button
           className="btn-outline-quiet"
           onClick={onSimulateNewMeeting}

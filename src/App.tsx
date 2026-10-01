@@ -10,6 +10,7 @@ import { ContextRail } from './components/ContextRail';
 import { SearchModal } from './components/SearchModal';
 import { ActionItemModal } from './components/ActionItemModal';
 import { ShareMomentModal } from './components/ShareMomentModal';
+import { ShortcutsModal } from './components/ShortcutsModal';
 import { Toast } from './components/Toast';
 import { PreMeetingBriefView } from './components/PreMeetingBriefView';
 import { MeetingPulse } from './components/MeetingPulse';
@@ -32,6 +33,7 @@ export const App: React.FC = () => {
   const [activeTemplate, setActiveTemplate] = useState<SummaryTemplate>('general');
   const [mobilePane, setMobilePane] = useState<'transcript' | 'intel'>('transcript');
   const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState<boolean>(false);
   const [highlightQuery, setHighlightQuery] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -346,6 +348,9 @@ export const App: React.FC = () => {
       if (e.key === '/') {
         e.preventDefault();
         setIsSearchModalOpen(true);
+      } else if (e.key === '?') {
+        e.preventDefault();
+        setIsShortcutsModalOpen((prev) => !prev);
       } else if (e.code === 'Space') {
         e.preventDefault();
         handleTogglePlayPause();
@@ -355,6 +360,14 @@ export const App: React.FC = () => {
         handleSeek(playbackTime + 10);
       } else if (e.key === 'm' || e.key === 'M') {
         handleToggleMute();
+      } else if (e.key === '1') {
+        setIndexTab('brief');
+      } else if (e.key === '2') {
+        setIndexTab('decisions');
+      } else if (e.key === '3') {
+        setIndexTab('actions');
+      } else if (e.key === '4') {
+        setIndexTab('highlights');
       }
     };
 
@@ -734,6 +747,7 @@ export const App: React.FC = () => {
         searchQuery={highlightQuery}
         onOpenSearchModal={() => setIsSearchModalOpen(true)}
         onSimulateNewMeeting={handleSimulateNewMeeting}
+        onOpenShortcuts={() => setIsShortcutsModalOpen(true)}
       />
 
       {/* Shared Moment Banner (Appears when opened via shared URL) */}
@@ -947,6 +961,12 @@ export const App: React.FC = () => {
         meetingCategory={activeMeeting.category}
         meetingDate={activeMeeting.date}
         onCopyFeedback={showToast}
+      />
+
+      {/* Keyboard Shortcuts Guide Modal */}
+      <ShortcutsModal
+        isOpen={isShortcutsModalOpen}
+        onClose={() => setIsShortcutsModalOpen(false)}
       />
 
       {/* Toast Feedback Notification */}
