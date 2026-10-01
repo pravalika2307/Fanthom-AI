@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { seededMeetings } from './data/seededMeetings';
 import { Meeting, SummaryTemplate, ActionItem, Highlight } from './types';
 import { Navbar } from './components/Navbar';
@@ -68,8 +68,23 @@ export const App: React.FC = () => {
     timestamp: number;
   } | null>(null);
 
-  const activeMeeting =
-    meetings.find((m) => m.id === selectedMeetingId) || meetings[0];
+  const activeMeeting = useMemo(() => {
+    const found = meetings.find((m) => m.id === selectedMeetingId);
+    if (found && found.status !== 'upcoming') {
+      return found;
+    }
+    // If selected meeting is upcoming, redirect to linked previous meeting or first completed meeting
+    if (found?.relatedMeetingId) {
+      const rel = meetings.find((m) => m.id === found.relatedMeetingId);
+      if (rel && rel.status !== 'upcoming') return rel;
+    }
+    const previousFromBrief = found?.preMeetingBrief?.relatedPreviousMeeting?.id;
+    if (previousFromBrief) {
+      const prev = meetings.find((m) => m.id === previousFromBrief);
+      if (prev && prev.status !== 'upcoming') return prev;
+    }
+    return meetings.find((m) => m.status === 'completed') || meetings[0];
+  }, [meetings, selectedMeetingId]);
 
   const totalDurationSeconds = activeMeeting ? activeMeeting.durationMinutes * 60 : 0;
 
@@ -94,6 +109,14 @@ export const App: React.FC = () => {
       }
 
       if (meetingParam && meetings.some((m) => m.id === meetingParam)) {
+        const targetMeeting = meetings.find((m) => m.id === meetingParam);
+        if (targetMeeting?.status === 'upcoming') {
+          setSelectedBriefMeetingId(meetingParam);
+          setCurrentView('brief');
+          window.location.hash = `#brief=${meetingParam}`;
+          return;
+        }
+
         setSelectedMeetingId(meetingParam);
         setCurrentView('workspace');
 
@@ -206,6 +229,11 @@ export const App: React.FC = () => {
   };
 
   const handleSelectMeeting = (id: string) => {
+    const targetMeeting = meetings.find((m) => m.id === id);
+    if (targetMeeting?.status === 'upcoming') {
+      handleOpenBrief(id);
+      return;
+    }
     setSelectedMeetingId(id);
     setCurrentView('workspace');
     setPlaybackTime(0);
@@ -273,6 +301,16 @@ export const App: React.FC = () => {
   };
 
   const handleEnterMeetingFromBrief = (meetingId: string) => {
+    const targetMeeting = meetings.find((m) => m.id === meetingId);
+    if (targetMeeting?.status === 'upcoming') {
+      const sourceId =
+        targetMeeting.preMeetingBrief?.relatedPreviousMeeting?.id ||
+        targetMeeting.relatedMeetingId;
+      if (sourceId && meetings.some((m) => m.id === sourceId)) {
+        handleOpenSourceMeeting(sourceId, 0);
+        return;
+      }
+    }
     setSelectedMeetingId(meetingId);
     setCurrentView('workspace');
     setPlaybackTime(0);
@@ -505,7 +543,19 @@ ${activeMeeting.actionItems
       {/* Top Navigation Bar */}
       <Navbar
         currentView={currentView}
-        onViewChange={setCurrentView}
+        onViewChange={(view) => {
+          if (view === 'workspace') {
+            const current = meetings.find((m) => m.id === selectedMeetingId);
+            if (current?.status === 'upcoming') {
+              const fallback =
+                current.relatedMeetingId ||
+                current.preMeetingBrief?.relatedPreviousMeeting?.id ||
+                'meeting-arch-q4';
+              setSelectedMeetingId(fallback);
+            }
+          }
+          setCurrentView(view);
+        }}
         activeMeetingTitle={activeMeeting?.title}
         searchQuery={highlightQuery}
         onOpenSearchModal={() => setIsSearchModalOpen(true)}

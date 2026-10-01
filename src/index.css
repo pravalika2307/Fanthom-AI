@@ -2731,6 +2731,21 @@ input, textarea, select {
   border-radius: 9999px;
 }
 
+.brief-status-subtle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .brief-hero-title {
   font-size: 26px;
   font-weight: 700;

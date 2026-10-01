@@ -15,11 +15,15 @@ export const ConversationFlowMap: React.FC<ConversationFlowMapProps> = ({
 }) => {
   // Find Architecture thread
   const archPrev = meetings.find((m) => m.id === 'meeting-arch-q4');
-  const archUpcoming = meetings.find((m) => m.id === 'upcoming-rollout');
+  const archUpcoming = meetings.find(
+    (m) => m.id === 'meeting-arch-rollout' || m.id === 'upcoming-rollout'
+  );
 
   // Find Sales / Security thread
   const salesPrev = meetings.find((m) => m.id === 'meeting-sales-acme');
-  const salesUpcoming = meetings.find((m) => m.id === 'upcoming-security');
+  const salesUpcoming = meetings.find(
+    (m) => m.id === 'meeting-sales-kickoff' || m.id === 'upcoming-security'
+  );
 
   return (
     <section className="conversation-flow-section">

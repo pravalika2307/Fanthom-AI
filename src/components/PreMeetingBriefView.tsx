@@ -45,6 +45,15 @@ export const PreMeetingBriefView: React.FC<PreMeetingBriefViewProps> = ({
   const [newPointText, setNewPointText] = useState('');
 
   const brief = meeting.preMeetingBrief;
+  const isUpcoming = meeting.status === 'upcoming';
+
+  // Identify linked previous recorded meeting
+  const previousMeetingId =
+    brief?.relatedPreviousMeeting?.id ||
+    meeting.relatedMeetingId ||
+    (allMeetings.find((m) => m.id === 'meeting-arch-q4')?.id);
+
+  const previousMeeting = allMeetings.find((m) => m.id === previousMeetingId);
 
   const handleAddPointSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,26 +69,42 @@ export const PreMeetingBriefView: React.FC<PreMeetingBriefViewProps> = ({
         <div className="workspace-breadcrumbs">
           <button className="breadcrumb-link" onClick={onBackToDashboard}>
             <ArrowLeft size={13} />
-            <span>Meetings Library</span>
+            <span>Meetings</span>
           </button>
           <span className="crumb-separator">/</span>
-          <span className="crumb-category">Upcoming Briefing</span>
+          <span className="crumb-category">Pre-Meeting Brief</span>
           <span className="crumb-separator">/</span>
           <span className="crumb-current">{meeting.title}</span>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button className="btn-secondary" onClick={onBackToDashboard}>
-            <span>Back to Dashboard</span>
+            <ArrowLeft size={13} style={{ marginRight: 4 }} />
+            <span>Back to Meetings</span>
           </button>
-          <button
-            className="btn-primary"
-            onClick={() => onEnterMeeting(meeting.id)}
-            title="Enter live workspace or start notetaker"
-          >
-            <Video size={13} />
-            <span>Enter Meeting Workspace</span>
-          </button>
+
+          {isUpcoming && previousMeetingId ? (
+            <button
+              className="btn-primary"
+              onClick={() => onOpenSourceMeeting(previousMeetingId, 0)}
+              title={
+                previousMeeting
+                  ? `Open previous conversation: "${previousMeeting.title}"`
+                  : 'Open previous conversation'
+              }
+            >
+              <span>Open previous conversation →</span>
+            </button>
+          ) : (
+            <button
+              className="btn-primary"
+              onClick={() => onEnterMeeting(meeting.id)}
+              title="Open meeting workspace"
+            >
+              <Video size={13} />
+              <span>Open meeting workspace</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -88,10 +113,17 @@ export const PreMeetingBriefView: React.FC<PreMeetingBriefViewProps> = ({
         {/* BRIEF HERO SECTION */}
         <section className="brief-hero-card">
           <div className="brief-hero-meta-strip">
-            <span className="brief-kicker-tag">
-              <Compass size={11} style={{ marginRight: 4 }} />
-              PRE-MEETING BRIEF
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="brief-kicker-tag">
+                <Compass size={11} style={{ marginRight: 4 }} />
+                PRE-MEETING BRIEF
+              </span>
+              {isUpcoming && (
+                <span className="brief-status-subtle">
+                  UPCOMING · NOT YET RECORDED
+                </span>
+              )}
+            </div>
             <span className="brief-status-pill">Scheduled Call</span>
           </div>
 
