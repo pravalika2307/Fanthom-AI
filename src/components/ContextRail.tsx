@@ -141,6 +141,35 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
     onCopyText(csv, `Exported ${meeting.actionItems.length} action items to CSV`);
   };
 
+  // Calculate speech dynamics and meeting efficiency metrics
+  const meetingDynamics = useMemo(() => {
+    let totalWords = 0;
+    const speakerStats: Record<string, { words: number; turns: number; durationSeconds: number }> = {};
+
+    meeting.transcript.forEach((turn) => {
+      const words = turn.text.trim().split(/\s+/).filter(Boolean).length;
+      totalWords += words;
+      const turnDuration = Math.max(1, turn.endTime - turn.startTime);
+
+      if (!speakerStats[turn.speakerId]) {
+        speakerStats[turn.speakerId] = { words: 0, turns: 0, durationSeconds: 0 };
+      }
+      speakerStats[turn.speakerId].words += words;
+      speakerStats[turn.speakerId].turns += 1;
+      speakerStats[turn.speakerId].durationSeconds += turnDuration;
+    });
+
+    const readingTimeMinutes = Math.max(1, Math.ceil(totalWords / 220));
+    const efficiencyRatio = meeting.durationMinutes > 0 ? (meeting.durationMinutes / readingTimeMinutes).toFixed(1) : '1.0';
+
+    return {
+      totalWords,
+      readingTimeMinutes,
+      efficiencyRatio,
+      speakerStats,
+    };
+  }, [meeting]);
+
   return (
     <aside className="workspace-intel-rail">
       {/* Editorial Meeting Index Header */}
@@ -562,12 +591,30 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
         )}
 
         {/* ==============================================================
-            TAB 5: DYNAMICS
+            TAB 5: DYNAMICS & SPEECH ANALYTICS
             ============================================================== */}
         {activeTab === 'context' && (
           <div className="editorial-panel">
-            <div className="section-head-quiet">
-              <h3 className="section-title-quiet">Speaking Distribution</h3>
+            {/* Executive Meeting Efficiency Overview */}
+            <div className="dynamics-efficiency-strip">
+              <div className="efficiency-metric-box">
+                <span className="metric-box-label">Executive Reading Time</span>
+                <span className="metric-box-val">~{meetingDynamics.readingTimeMinutes} min read</span>
+                <span className="metric-box-sub">
+                  {meetingDynamics.efficiencyRatio}x speedup vs {meeting.durationMinutes}m sync
+                </span>
+              </div>
+              <div className="efficiency-metric-box">
+                <span className="metric-box-label">Spoken Volume</span>
+                <span className="metric-box-val">{meetingDynamics.totalWords.toLocaleString()} words</span>
+                <span className="metric-box-sub">
+                  Across {meeting.transcript.length} dialogue turns
+                </span>
+              </div>
+            </div>
+
+            <div className="section-head-quiet" style={{ marginTop: '16px' }}>
+              <h3 className="section-title-quiet">Speaking Distribution & Pace</h3>
             </div>
 
             {/* Quiet Speaking Distribution Table */}
@@ -575,11 +622,19 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
               {meeting.participants.map((p) => {
                 const ratio = meeting.stats.speakingRatio[p.id] || 0;
                 if (ratio === 0) return null;
+                const stats = meetingDynamics.speakerStats[p.id];
+                const wpm = stats && stats.durationSeconds > 0
+                  ? Math.round((stats.words / (stats.durationSeconds / 60)))
+                  : null;
+
                 return (
                   <div key={p.id} className="speaking-dist-row">
                     <div className="speaking-dist-left">
                       <span className="dist-name">{p.name}</span>
-                      <span className="dist-role">{p.role.split(',')[0]}</span>
+                      <span className="dist-role">
+                        {p.role.split(',')[0]}
+                        {wpm ? ` · ${wpm} WPM · ${stats?.words || 0} w` : ''}
+                      </span>
                     </div>
                     <div className="speaking-dist-right">
                       <div className="dist-bar-track">

@@ -1835,6 +1835,44 @@ input, textarea, select {
   gap: 6px;
 }
 
+/* Dynamics & Efficiency Metrics */
+.dynamics-efficiency-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.efficiency-metric-box {
+  background: var(--bg-surface-elevated, #16181f);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-sm, 6px);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.metric-box-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+}
+
+.metric-box-val {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  letter-spacing: -0.01em;
+}
+
+.metric-box-sub {
+  font-size: 11px;
+  color: var(--accent-cyan, #38bdf8);
+}
+
 /* Speaking distribution */
 .speaking-distribution-list {
   display: flex;
