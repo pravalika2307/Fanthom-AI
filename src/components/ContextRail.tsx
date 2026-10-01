@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Meeting,
   SummaryTemplate,
@@ -14,7 +14,10 @@ import {
   Copy,
   Clock,
   ExternalLink,
+  Download,
+  ArrowUpDown,
 } from 'lucide-react';
+import { generateActionItemsCsv, triggerBrowserDownload } from '../utils/exportMeeting';
 
 interface ContextRailProps {
   meeting: Meeting;
@@ -51,6 +54,7 @@ export const ContextRail: React.FC<ContextRailProps> = ({
   };
 
   const [actionsFilter, setActionsFilter] = useState<'all' | 'my' | 'open' | 'done'>('all');
+  const [actionsSort, setActionsSort] = useState<'due' | 'assignee' | 'status'>('due');
   const [isAddingAction, setIsAddingAction] = useState(false);
   const [newActionText, setNewActionText] = useState('');
   const [newActionAssignee, setNewActionAssignee] = useState(
@@ -117,6 +121,25 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
     }
     return true;
   });
+
+  // Sorted action items according to chosen ordering criteria
+  const sortedActions = useMemo(() => {
+    const list = [...filteredActions];
+    if (actionsSort === 'due') {
+      list.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    } else if (actionsSort === 'assignee') {
+      list.sort((a, b) => a.assigneeName.localeCompare(b.assigneeName));
+    } else if (actionsSort === 'status') {
+      list.sort((a, b) => Number(a.completed) - Number(b.completed));
+    }
+    return list;
+  }, [filteredActions, actionsSort]);
+
+  const handleExportCsv = () => {
+    const csv = generateActionItemsCsv(meeting.actionItems, meeting.title);
+    triggerBrowserDownload(`${meeting.id}-action-items.csv`, csv, 'text/csv;charset=utf-8');
+    onCopyText(csv, `Exported ${meeting.actionItems.length} action items to CSV`);
+  };
 
   return (
     <aside className="workspace-intel-rail">
@@ -353,32 +376,57 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
           <div className="editorial-panel">
             <div className="section-head-quiet">
               <h3 className="section-title-quiet">Action Items</h3>
-              <button
-                className="link-btn-quiet"
-                onClick={() => setIsAddingAction(!isAddingAction)}
-              >
-                <Plus size={11} />
-                <span>{isAddingAction ? 'Cancel' : 'New Task'}</span>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  className="link-btn-quiet"
+                  onClick={handleExportCsv}
+                  title="Export action items to CSV for Linear, Jira or Asana"
+                >
+                  <Download size={11} />
+                  <span>Export CSV</span>
+                </button>
+                <button
+                  className="link-btn-quiet"
+                  onClick={() => setIsAddingAction(!isAddingAction)}
+                >
+                  <Plus size={11} />
+                  <span>{isAddingAction ? 'Cancel' : 'New Task'}</span>
+                </button>
+              </div>
             </div>
 
-            {/* Filter pills */}
-            <div className="index-filter-strip">
-              {(['all', 'my', 'open', 'done'] as const).map((filter) => (
-                <button
-                  key={filter}
-                  className={`index-filter-btn ${actionsFilter === filter ? 'active' : ''}`}
-                  onClick={() => setActionsFilter(filter)}
+            {/* Filter pills and sort selector */}
+            <div className="index-filter-strip" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {(['all', 'my', 'open', 'done'] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    className={`index-filter-btn ${actionsFilter === filter ? 'active' : ''}`}
+                    onClick={() => setActionsFilter(filter)}
+                  >
+                    {filter === 'all'
+                      ? 'All'
+                      : filter === 'my'
+                      ? 'Assigned to Me'
+                      : filter === 'open'
+                      ? 'Open'
+                      : 'Done'}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                <ArrowUpDown size={11} />
+                <select
+                  value={actionsSort}
+                  onChange={(e) => setActionsSort(e.target.value as any)}
+                  className="sort-select-subtle"
+                  aria-label="Sort action items"
                 >
-                  {filter === 'all'
-                    ? 'All'
-                    : filter === 'my'
-                    ? 'Assigned to Me'
-                    : filter === 'open'
-                    ? 'Open'
-                    : 'Done'}
-                </button>
-              ))}
+                  <option value="due">Due Date</option>
+                  <option value="assignee">Assignee</option>
+                  <option value="status">Status</option>
+                </select>
+              </div>
             </div>
 
             {/* Inline Add Action Form */}
@@ -429,10 +477,10 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
 
             {/* Actions List */}
             <div className="editorial-rows-list">
-              {filteredActions.length === 0 ? (
+              {sortedActions.length === 0 ? (
                 <p className="empty-sub-text">No action items matching this filter.</p>
               ) : (
-                filteredActions.map((action) => (
+                sortedActions.map((action) => (
                   <div
                     key={action.id}
                     className={`editorial-action-row ${action.completed ? 'completed' : ''}`}

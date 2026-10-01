@@ -1,4 +1,4 @@
-import { Meeting, SummaryTemplate } from '../types';
+import { Meeting, SummaryTemplate, ActionItem } from '../types';
 import { formatSeconds, formatDateTime } from './formatters';
 
 /**
@@ -88,6 +88,29 @@ export function generateMeetingJson(meeting: Meeting): string {
 }
 
 /**
+ * Generates a standard CSV representation of action items for import into Jira, Linear, or Asana
+ */
+export function generateActionItemsCsv(actionItems: ActionItem[], meetingTitle: string): string {
+  const headers = ['Task Description', 'Assignee', 'Due Date', 'Status', 'Meeting Context'];
+  const escapeCsv = (str: string) => {
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const rows = actionItems.map((item) => [
+    escapeCsv(item.description),
+    escapeCsv(item.assigneeName),
+    escapeCsv(item.dueDate),
+    escapeCsv(item.completed ? 'Done' : 'Open'),
+    escapeCsv(meetingTitle),
+  ]);
+
+  return [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+}
+
+/**
  * Triggers a browser file download with appropriate MIME type
  */
 export function triggerBrowserDownload(filename: string, content: string, mimeType = 'text/markdown;charset=utf-8') {
@@ -101,3 +124,4 @@ export function triggerBrowserDownload(filename: string, content: string, mimeTy
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
