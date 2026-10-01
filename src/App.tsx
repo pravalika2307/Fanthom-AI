@@ -25,7 +25,7 @@ export const App: React.FC = () => {
   const [meetings, setMeetings] = useState<Meeting[]>(seededMeetings);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string>('meeting-arch-q4');
   const [selectedBriefMeetingId, setSelectedBriefMeetingId] = useState<string>('meeting-arch-rollout');
-  const [currentView, setCurrentView] = useState<'dashboard' | 'workspace' | 'brief'>('workspace');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'workspace' | 'brief'>('dashboard');
   const [playbackTime, setPlaybackTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
@@ -114,7 +114,11 @@ export const App: React.FC = () => {
   useEffect(() => {
     const parseUrlHash = () => {
       const hash = window.location.hash.replace(/^#/, '');
-      if (!hash) return;
+      // No hash → root URL: default to Meeting Library
+      if (!hash) {
+        setCurrentView('dashboard');
+        return;
+      }
 
       const params = new URLSearchParams(hash);
       const briefParam = params.get('brief');
