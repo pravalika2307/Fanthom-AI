@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { TranscriptSegment, Participant } from '../types';
 import { formatSeconds } from '../utils/formatters';
 import {
@@ -11,6 +11,209 @@ import {
   X,
   Star,
 } from 'lucide-react';
+
+// Pure helper to highlight matching text in dialogue
+const renderHighlightedText = (text: string, query: string, shared: string) => {
+  const target = query || shared;
+  if (!target.trim()) return text;
+
+  const parts = text.split(
+    new RegExp(`(${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  );
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === target.toLowerCase() ? (
+          <mark
+            key={i}
+            className={
+              shared && part.toLowerCase() === shared.toLowerCase()
+                ? 'shared-moment-highlight'
+                : 'search-match-highlight'
+            }
+          >
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+};
+
+interface EditorialTurnRowProps {
+  segment: TranscriptSegment;
+  isActive: boolean;
+  isBookmarked: boolean;
+  hasDemoAudio: boolean;
+  localSearch: string;
+  sharedQuote: string;
+  onSeek: (seconds: number) => void;
+  onPlayFromHere: (seconds: number) => void;
+  onToggleBookmark: (turnId: string) => void;
+  onRequestActionModal: (text: string, speaker: string, time: number) => void;
+  onRequestShareModal: (text: string, speaker: string, time: number, speakerColor?: string) => void;
+  onSaveHighlight: (text: string, speaker: string, time: number, segmentId?: string) => void;
+  onCopyQuote: (text: string, speaker: string, time: number) => void;
+  activeSegmentRef?: React.RefObject<HTMLElement | null>;
+}
+
+// Memoized Turn Row: prevents unneeded DOM re-renders during high-frequency audio playback
+const EditorialTurnRow = memo<EditorialTurnRowProps>(({
+  segment,
+  isActive,
+  isBookmarked,
+  hasDemoAudio,
+  localSearch,
+  sharedQuote,
+  onSeek,
+  onPlayFromHere,
+  onToggleBookmark,
+  onRequestActionModal,
+  onRequestShareModal,
+  onSaveHighlight,
+  onCopyQuote,
+  activeSegmentRef,
+}) => {
+  const jumpTime = (segment.demoStartTime !== undefined && hasDemoAudio)
+    ? segment.demoStartTime
+    : segment.startTime;
+  const displayTime = (segment.demoStartTime !== undefined && hasDemoAudio)
+    ? segment.demoStartTime
+    : segment.startTime;
+
+  return (
+    <article
+      data-segment-id={segment.id}
+      ref={isActive ? (activeSegmentRef as any) : null}
+      className={`editorial-turn ${isActive ? 'is-active' : ''}`}
+    >
+      <header className="editorial-turn-meta">
+        <button
+          className="editorial-turn-timestamp"
+          onClick={() => onSeek(jumpTime)}
+          title={`Jump playback to ${formatSeconds(jumpTime)}`}
+        >
+          {formatSeconds(displayTime)}
+        </button>
+
+        <span className="editorial-turn-speaker">
+          {segment.speakerName}
+          {isBookmarked && (
+            <span title="Starred turn" style={{ marginLeft: 5, verticalAlign: 'middle', display: 'inline-flex' }}>
+              <Star
+                size={10}
+                fill="#f59e0b"
+                color="#f59e0b"
+              />
+            </span>
+          )}
+        </span>
+
+        {/* Contextual Action Bar — Quiet Inline Links on Hover */}
+        <div className="editorial-turn-actions">
+          <button
+            className={`turn-action-link ${isBookmarked ? 'active' : ''}`}
+            onClick={() => onToggleBookmark(segment.id)}
+            title={isBookmarked ? 'Remove star' : 'Star this turn'}
+          >
+            <Star
+              size={10}
+              fill={isBookmarked ? '#f59e0b' : 'none'}
+              color={isBookmarked ? '#f59e0b' : 'currentColor'}
+            />
+            <span>{isBookmarked ? 'Starred' : 'Star'}</span>
+          </button>
+          <span className="action-sep">·</span>
+          <button
+            className="turn-action-link"
+            onClick={() => onPlayFromHere(jumpTime)}
+            title="Play from this moment"
+          >
+            <Play size={10} />
+            <span>Play</span>
+          </button>
+          <span className="action-sep">·</span>
+          <button
+            className="turn-action-link"
+            onClick={() =>
+              onRequestActionModal(
+                segment.text,
+                segment.speakerName,
+                jumpTime
+              )
+            }
+            title="Create Action Item from this turn"
+          >
+            <CheckSquare size={10} />
+            <span>Action</span>
+          </button>
+          <span className="action-sep">·</span>
+          <button
+            className="turn-action-link"
+            onClick={() =>
+              onSaveHighlight(
+                segment.text,
+                segment.speakerName,
+                jumpTime,
+                segment.id
+              )
+            }
+            title="Save as highlight"
+          >
+            <Bookmark size={10} />
+            <span>Highlight</span>
+          </button>
+          <span className="action-sep">·</span>
+          <button
+            className="turn-action-link"
+            onClick={() =>
+              onCopyQuote(segment.text, segment.speakerName, jumpTime)
+            }
+            title="Copy quote with attribution"
+          >
+            <Copy size={10} />
+            <span>Copy</span>
+          </button>
+          <span className="action-sep">·</span>
+          <button
+            className="turn-action-link"
+            onClick={() =>
+              onRequestShareModal(
+                segment.text,
+                segment.speakerName,
+                jumpTime
+              )
+            }
+            title="Share this moment with a deep link"
+          >
+            <Share2 size={10} />
+            <span>Share</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Speech Dialogue Body */}
+      <div className="editorial-turn-body">
+        <p className="editorial-turn-text">
+          {renderHighlightedText(segment.text, localSearch, sharedQuote)}
+        </p>
+
+        {/* Highlight Tag */}
+        {segment.highlighted && segment.highlightTag && (
+          <div className="editorial-highlight-tag">
+            <Bookmark size={10} />
+            <span>{segment.highlightTag}</span>
+          </div>
+        )}
+      </div>
+    </article>
+  );
+});
+
+EditorialTurnRow.displayName = 'EditorialTurnRow';
 
 interface TranscriptViewProps {
   transcript: TranscriptSegment[];
@@ -65,7 +268,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   });
   const [showOnlyBookmarked, setShowOnlyBookmarked] = useState<boolean>(false);
 
-  const toggleBookmark = (turnId: string) => {
+  const toggleBookmark = useCallback((turnId: string) => {
     setBookmarkedTurnIds((prev) => {
       const next = new Set(prev);
       if (next.has(turnId)) {
@@ -78,7 +281,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
       } catch {}
       return next;
     });
-  };
+  }, []);
 
   const [selectionPopover, setSelectionPopover] = useState<SelectionPopoverState>({
     visible: false,
@@ -136,7 +339,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
     return matchesSearch && matchesSpeaker && matchesBookmark;
   });
 
-  // Auto-scroll to active segment when playing
+  // Auto-scroll to active segment when playing with boundary padding
   useEffect(() => {
     if (activeSegmentRef.current && containerRef.current) {
       const container = containerRef.current;
@@ -144,7 +347,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
       const containerRect = container.getBoundingClientRect();
       const activeRect = activeEl.getBoundingClientRect();
 
-      if (activeRect.top < containerRect.top || activeRect.bottom > containerRect.bottom) {
+      if (activeRect.top < containerRect.top + 28 || activeRect.bottom > containerRect.bottom - 28) {
         activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }
@@ -214,37 +417,6 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
     document.addEventListener('mousedown', handleDocumentClick);
     return () => document.removeEventListener('mousedown', handleDocumentClick);
   }, []);
-
-  // Helper to highlight matching text in dialogue
-  const renderHighlightedText = (text: string, query: string, shared: string) => {
-    const target = query || shared;
-    if (!target.trim()) return text;
-
-    const parts = text.split(
-      new RegExp(`(${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-    );
-
-    return (
-      <>
-        {parts.map((part, i) =>
-          part.toLowerCase() === target.toLowerCase() ? (
-            <mark
-              key={i}
-              className={
-                shared && part.toLowerCase() === shared.toLowerCase()
-                  ? 'shared-moment-highlight'
-                  : 'search-match-highlight'
-              }
-            >
-              {part}
-            </mark>
-          ) : (
-            part
-          )
-        )}
-      </>
-    );
-  };
 
   return (
     <div
@@ -427,148 +599,24 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
         ) : (
           filteredSegments.map((segment) => {
             const isActive = activeSegment?.id === segment.id;
-
             return (
-              <article
+              <EditorialTurnRow
                 key={segment.id}
-                data-segment-id={segment.id}
-                ref={isActive ? activeSegmentRef : null}
-                className={`editorial-turn ${isActive ? 'is-active' : ''}`}
-              >
-                {/* Speaker Left Meta Row */}
-                <header className="editorial-turn-meta">
-                  {(() => {
-                    const jumpTime = (segment.demoStartTime !== undefined && hasDemoAudio)
-                      ? segment.demoStartTime
-                      : segment.startTime;
-                    const displayTime = (segment.demoStartTime !== undefined && hasDemoAudio)
-                      ? segment.demoStartTime
-                      : segment.startTime;
-
-                    return (
-                      <>
-                        <button
-                          className="editorial-turn-timestamp"
-                          onClick={() => onSeek(jumpTime)}
-                          title={`Jump playback to ${formatSeconds(jumpTime)}`}
-                        >
-                          {formatSeconds(displayTime)}
-                        </button>
-
-                        <span className="editorial-turn-speaker">
-                          {segment.speakerName}
-                          {bookmarkedTurnIds.has(segment.id) && (
-                            <span title="Starred turn" style={{ marginLeft: 5, verticalAlign: 'middle', display: 'inline-flex' }}>
-                              <Star
-                                size={10}
-                                fill="#f59e0b"
-                                color="#f59e0b"
-                              />
-                            </span>
-                          )}
-                        </span>
-
-                        {/* Contextual Action Bar — Quiet Inline Links on Hover */}
-                        <div className="editorial-turn-actions">
-                          <button
-                            className={`turn-action-link ${bookmarkedTurnIds.has(segment.id) ? 'active' : ''}`}
-                            onClick={() => toggleBookmark(segment.id)}
-                            title={bookmarkedTurnIds.has(segment.id) ? 'Remove star' : 'Star this turn'}
-                          >
-                            <Star
-                              size={10}
-                              fill={bookmarkedTurnIds.has(segment.id) ? '#f59e0b' : 'none'}
-                              color={bookmarkedTurnIds.has(segment.id) ? '#f59e0b' : 'currentColor'}
-                            />
-                            <span>{bookmarkedTurnIds.has(segment.id) ? 'Starred' : 'Star'}</span>
-                          </button>
-                          <span className="action-sep">·</span>
-                          <button
-                            className="turn-action-link"
-                            onClick={() => onPlayFromHere(jumpTime)}
-                            title="Play from this moment"
-                          >
-                            <Play size={10} />
-                            <span>Play</span>
-                          </button>
-                          <span className="action-sep">·</span>
-                          <button
-                            className="turn-action-link"
-                            onClick={() =>
-                              onRequestActionModal(
-                                segment.text,
-                                segment.speakerName,
-                                jumpTime
-                              )
-                            }
-                            title="Create Action Item from this turn"
-                          >
-                            <CheckSquare size={10} />
-                            <span>Action</span>
-                          </button>
-                          <span className="action-sep">·</span>
-                          <button
-                            className="turn-action-link"
-                            onClick={() =>
-                              onSaveHighlight(
-                                segment.text,
-                                segment.speakerName,
-                                jumpTime,
-                                segment.id
-                              )
-                            }
-                            title="Save as highlight"
-                          >
-                            <Bookmark size={10} />
-                            <span>Highlight</span>
-                          </button>
-                          <span className="action-sep">·</span>
-                          <button
-                            className="turn-action-link"
-                            onClick={() =>
-                              onCopyQuote(segment.text, segment.speakerName, jumpTime)
-                            }
-                            title="Copy quote with attribution"
-                          >
-                            <Copy size={10} />
-                            <span>Copy</span>
-                          </button>
-                          <span className="action-sep">·</span>
-                          <button
-                            className="turn-action-link"
-                            onClick={() =>
-                              onRequestShareModal(
-                                segment.text,
-                                segment.speakerName,
-                                jumpTime
-                              )
-                            }
-                            title="Share this moment with a deep link"
-                          >
-                            <Share2 size={10} />
-                            <span>Share</span>
-                          </button>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </header>
-
-                {/* Speech Dialogue Body */}
-                <div className="editorial-turn-body">
-                  <p className="editorial-turn-text">
-                    {renderHighlightedText(segment.text, localSearch, sharedQuote)}
-                  </p>
-
-                  {/* Highlight Tag */}
-                  {segment.highlighted && segment.highlightTag && (
-                    <div className="editorial-highlight-tag">
-                      <Bookmark size={10} />
-                      <span>{segment.highlightTag}</span>
-                    </div>
-                  )}
-                </div>
-              </article>
+                segment={segment}
+                isActive={isActive}
+                isBookmarked={bookmarkedTurnIds.has(segment.id)}
+                hasDemoAudio={hasDemoAudio}
+                localSearch={localSearch}
+                sharedQuote={sharedQuote}
+                onSeek={onSeek}
+                onPlayFromHere={onPlayFromHere}
+                onToggleBookmark={toggleBookmark}
+                onRequestActionModal={onRequestActionModal}
+                onRequestShareModal={onRequestShareModal}
+                onSaveHighlight={onSaveHighlight}
+                onCopyQuote={onCopyQuote}
+                activeSegmentRef={isActive ? activeSegmentRef : undefined}
+              />
             );
           })
         )}
