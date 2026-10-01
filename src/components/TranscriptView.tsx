@@ -9,6 +9,7 @@ import {
   Copy,
   Share2,
   X,
+  Star,
 } from 'lucide-react';
 
 interface TranscriptViewProps {
@@ -54,6 +55,31 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   onSaveHighlight,
 }) => {
   const [localSearch, setLocalSearch] = useState(externalSearchTerm);
+  const [bookmarkedTurnIds, setBookmarkedTurnIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('fanthom_starred_turns');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const [showOnlyBookmarked, setShowOnlyBookmarked] = useState<boolean>(false);
+
+  const toggleBookmark = (turnId: string) => {
+    setBookmarkedTurnIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(turnId)) {
+        next.delete(turnId);
+      } else {
+        next.add(turnId);
+      }
+      try {
+        localStorage.setItem('fanthom_starred_turns', JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  };
+
   const [selectionPopover, setSelectionPopover] = useState<SelectionPopoverState>({
     visible: false,
     x: 0,
@@ -94,7 +120,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
         (seg) => currentTime >= seg.startTime && currentTime <= seg.endTime
       );
 
-  // Filter segments if search query or speaker filter is present
+  // Filter segments if search query, speaker filter, or star filter is present
   const filteredSegments = transcript.filter((seg) => {
     const matchesSearch =
       !localSearch.trim() ||
@@ -105,7 +131,9 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
       !activeSpeakerFilter ||
       seg.speakerName.toLowerCase() === activeSpeakerFilter.toLowerCase();
 
-    return matchesSearch && matchesSpeaker;
+    const matchesBookmark = !showOnlyBookmarked || bookmarkedTurnIds.has(seg.id);
+
+    return matchesSearch && matchesSpeaker && matchesBookmark;
   });
 
   // Auto-scroll to active segment when playing
@@ -333,8 +361,32 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
           )}
         </div>
 
-        <div className="transcript-count-label">
-          {filteredSegments.length} of {transcript.length} turns
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {bookmarkedTurnIds.size > 0 && (
+            <button
+              className={`filter-pill-btn ${showOnlyBookmarked ? 'active' : ''}`}
+              onClick={() => setShowOnlyBookmarked(!showOnlyBookmarked)}
+              title={showOnlyBookmarked ? 'Show all turns' : 'Show only starred turns'}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '11px',
+                padding: '3px 8px',
+                borderRadius: '4px',
+                border: '1px solid var(--border-subtle)',
+                background: showOnlyBookmarked ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
+                color: showOnlyBookmarked ? '#f59e0b' : 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              <Star size={11} fill={showOnlyBookmarked ? '#f59e0b' : 'none'} color="#f59e0b" />
+              <span>Starred ({bookmarkedTurnIds.size})</span>
+            </button>
+          )}
+          <div className="transcript-count-label">
+            {filteredSegments.length} of {transcript.length} turns
+          </div>
         </div>
       </div>
 
@@ -403,10 +455,34 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
                           {formatSeconds(displayTime)}
                         </button>
 
-                        <span className="editorial-turn-speaker">{segment.speakerName}</span>
+                        <span className="editorial-turn-speaker">
+                          {segment.speakerName}
+                          {bookmarkedTurnIds.has(segment.id) && (
+                            <span title="Starred turn" style={{ marginLeft: 5, verticalAlign: 'middle', display: 'inline-flex' }}>
+                              <Star
+                                size={10}
+                                fill="#f59e0b"
+                                color="#f59e0b"
+                              />
+                            </span>
+                          )}
+                        </span>
 
                         {/* Contextual Action Bar — Quiet Inline Links on Hover */}
                         <div className="editorial-turn-actions">
+                          <button
+                            className={`turn-action-link ${bookmarkedTurnIds.has(segment.id) ? 'active' : ''}`}
+                            onClick={() => toggleBookmark(segment.id)}
+                            title={bookmarkedTurnIds.has(segment.id) ? 'Remove star' : 'Star this turn'}
+                          >
+                            <Star
+                              size={10}
+                              fill={bookmarkedTurnIds.has(segment.id) ? '#f59e0b' : 'none'}
+                              color={bookmarkedTurnIds.has(segment.id) ? '#f59e0b' : 'currentColor'}
+                            />
+                            <span>{bookmarkedTurnIds.has(segment.id) ? 'Starred' : 'Star'}</span>
+                          </button>
+                          <span className="action-sep">·</span>
                           <button
                             className="turn-action-link"
                             onClick={() => onPlayFromHere(jumpTime)}
