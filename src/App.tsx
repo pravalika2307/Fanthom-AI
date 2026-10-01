@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { seededMeetings } from './data/seededMeetings';
 import { Meeting, SummaryTemplate, ActionItem, Highlight } from './types';
 import { Navbar } from './components/Navbar';
@@ -14,11 +14,14 @@ import { ShortcutsModal } from './components/ShortcutsModal';
 import { Toast } from './components/Toast';
 import { PreMeetingBriefView } from './components/PreMeetingBriefView';
 import { MeetingPulse } from './components/MeetingPulse';
+import { BootScreen } from './components/BootScreen';
 import { formatSeconds } from './utils/formatters';
 import { generateMeetingMarkdown, generateMeetingJson, triggerBrowserDownload } from './utils/exportMeeting';
 import { Play } from 'lucide-react';
 
 export const App: React.FC = () => {
+  const [isAppReady, setIsAppReady] = useState(false);
+  const handleBootComplete = useCallback(() => setIsAppReady(true), []);
   const [meetings, setMeetings] = useState<Meeting[]>(seededMeetings);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string>('meeting-arch-q4');
   const [selectedBriefMeetingId, setSelectedBriefMeetingId] = useState<string>('meeting-arch-rollout');
@@ -726,7 +729,11 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="app-container">
+    <>
+      {/* Branded boot / loading screen — fades out once app is ready */}
+      {!isAppReady && <BootScreen onComplete={handleBootComplete} />}
+
+      <div className="app-container">
       {/* Top Navigation Bar */}
       <Navbar
         currentView={currentView}
@@ -975,6 +982,7 @@ export const App: React.FC = () => {
         <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
       )}
     </div>
+    </>
   );
 };
 
