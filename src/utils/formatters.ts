@@ -1,9 +1,15 @@
 export function formatSeconds(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
+  if (isNaN(seconds) || seconds <= 0) return '00:00';
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
-  const paddedMins = mins.toString().padStart(2, '0');
   const paddedSecs = secs.toString().padStart(2, '0');
-  return `${paddedMins}:${paddedSecs}`;
+
+  if (hours > 0) {
+    const paddedMins = mins.toString().padStart(2, '0');
+    return `${hours}:${paddedMins}:${paddedSecs}`;
+  }
+  return `${mins.toString().padStart(2, '0')}:${paddedSecs}`;
 }
 
 export function formatDate(isoString: string): string {
