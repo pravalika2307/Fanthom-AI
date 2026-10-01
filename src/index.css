@@ -4694,3 +4694,124 @@ input, textarea, select {
   }
 }
 
+/* ==========================================================================
+   EXECUTIVE PRINT & PDF EXPORT STYLESHEET
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 16mm 18mm;
+  }
+
+  *,
+  *::before,
+  *::after {
+    background: transparent !important;
+    color: #111827 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 11pt !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Hide app chrome, floating player, modals, and toasts */
+  .navbar,
+  .player-bar-quiet,
+  .mobile-pane-switcher,
+  .workspace-header-actions,
+  .breadcrumb-back-link,
+  .modal-overlay,
+  .toast,
+  .meeting-pulse-card,
+  .timeline-symbol-pin,
+  .quiet-scrubber-track,
+  .waveform-bars-container,
+  .btn-icon-subtle,
+  .sort-select-subtle,
+  .link-btn-quiet,
+  .export-dropdown-wrapper,
+  .shared-moment-banner {
+    display: none !important;
+  }
+
+  /* Expand workspace content for full-width editorial flow */
+  .workspace-container,
+  .workspace-content,
+  .editorial-transcript-wrap,
+  .workspace-intel-rail,
+  .brief-view-container,
+  .brief-document-layout {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+
+  .workspace-title {
+    font-size: 20pt !important;
+    color: #000000 !important;
+    margin-bottom: 8pt !important;
+  }
+
+  .workspace-editorial-consensus {
+    border-left: 3px solid #0284c7 !important;
+    padding-left: 10pt !important;
+    margin: 8pt 0 14pt 0 !important;
+  }
+
+  .consensus-text {
+    color: #1f2937 !important;
+    font-size: 11pt !important;
+  }
+
+  .workspace-meta-strip {
+    color: #4b5563 !important;
+    font-size: 9pt !important;
+    margin-bottom: 16pt !important;
+  }
+
+  .brief-hero-card,
+  .brief-section-card,
+  .editorial-panel,
+  .editorial-action-row,
+  .decision-row-body {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 4pt !important;
+    padding: 10pt !important;
+    margin-bottom: 12pt !important;
+    page-break-inside: avoid;
+  }
+
+  .editorial-turn-row {
+    page-break-inside: avoid;
+    border-bottom: 1px solid #f3f4f6 !important;
+    padding: 6pt 0 !important;
+  }
+
+  .speaker-display-name {
+    font-weight: 700 !important;
+    color: #000000 !important;
+  }
+
+  .dialogue-text {
+    color: #1f2937 !important;
+  }
+
+  a,
+  a:visited {
+    text-decoration: underline !important;
+    color: #2563eb !important;
+  }
+}
+
+

@@ -13,6 +13,10 @@ try {
   execSync('node scripts-dist/scripts/test_unit.js', { stdio: 'inherit' });
 } finally {
   if (existsSync('scripts-dist')) {
-    rmSync('scripts-dist', { recursive: true, force: true });
+    try {
+      rmSync('scripts-dist', { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    } catch (e) {
+      // Swallowing non-fatal transient EBUSY during script-dist directory teardown on Windows
+    }
   }
 }

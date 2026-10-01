@@ -17,6 +17,7 @@ import {
   Compass,
   AlertCircle,
   Video,
+  Printer,
 } from 'lucide-react';
 
 interface PreMeetingBriefViewProps {
@@ -81,6 +82,15 @@ export const PreMeetingBriefView: React.FC<PreMeetingBriefViewProps> = ({
           <button className="btn-secondary" onClick={onBackToDashboard}>
             <ArrowLeft size={13} style={{ marginRight: 4 }} />
             <span>Back to Meetings</span>
+          </button>
+
+          <button
+            className="btn-outline-quiet"
+            onClick={() => window.print()}
+            title="Print or Save as PDF"
+          >
+            <Printer size={13} style={{ marginRight: 4 }} />
+            <span>Print PDF</span>
           </button>
 
           {isUpcoming && previousMeetingId ? (

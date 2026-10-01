@@ -11,6 +11,7 @@ import {
   FileText,
   Zap,
   Compass,
+  Printer,
 } from 'lucide-react';
 
 import { MeetingSignals } from './MeetingSignals';
@@ -189,6 +190,19 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
                   <div className="export-item-details">
                     <span className="export-item-title">Copy Markdown</span>
                     <span className="export-item-desc">Copy document directly to system clipboard</span>
+                  </div>
+                </button>
+                <button
+                  className="export-menu-item"
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    setTimeout(() => window.print(), 50);
+                  }}
+                >
+                  <Printer size={13} />
+                  <div className="export-item-details">
+                    <span className="export-item-title">Print / Save as PDF</span>
+                    <span className="export-item-desc">Clean executive printable layout without UI chrome</span>
                   </div>
                 </button>
               </div>
