@@ -9,9 +9,11 @@ export const seededMeetings: Meeting[] = [
     durationMinutes: 58,
     status: 'completed',
     location: 'Zoom (Room Alpha)',
+    audioUrl: '/audio/q4-core-architecture.wav',
+    audioDurationSeconds: 495,
     preview: 'Agreed to adopt Redis Cluster with Raft consensus for the session tier; rejected write-behind caching due to data loss risk.',
     participants: [
-      { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
+      { id: 'u1', name: 'Pravalika Palle', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
       { id: 'u2', name: 'Marcus Vance', email: 'marcus.v@fanthom.ai', role: 'Principal Backend Engineer', avatarColor: '#10b981' },
       { id: 'u3', name: 'Sarah Lin', email: 'sarah.lin@fanthom.ai', role: 'VP of Engineering', avatarColor: '#8b5cf6' },
       { id: 'u4', name: 'Dave Kowalski', email: 'dave.k@fanthom.ai', role: 'SRE Infrastructure Lead', avatarColor: '#f59e0b' },
@@ -24,7 +26,7 @@ export const seededMeetings: Meeting[] = [
       {
         id: 't1',
         speakerId: 'u1',
-        speakerName: 'Pravalika Reddy',
+        speakerName: 'Pravalika Palle',
         startTime: 0,
         endTime: 24,
         text: "Thanks everyone for dialing into the Q4 core architecture sync. Today we need a definitive decision on our distributed caching tier. Our current Memcached cluster is hitting hot-shard limits during morning spikes.",
@@ -62,7 +64,7 @@ export const seededMeetings: Meeting[] = [
       {
         id: 't5',
         speakerId: 'u1',
-        speakerName: 'Pravalika Reddy',
+        speakerName: 'Pravalika Palle',
         startTime: 143,
         endTime: 185,
         text: "Good call, Tom. The architecture RFC mandates mutual TLS on port 6380 with automated Let's Encrypt certificate rotation via HashiCorp Vault. In addition, sensitive meeting tokens will be encrypted at the application layer with AES-256-GCM before touching the cache.",
@@ -100,7 +102,7 @@ export const seededMeetings: Meeting[] = [
       {
         id: 't9',
         speakerId: 'u1',
-        speakerName: 'Pravalika Reddy',
+        speakerName: 'Pravalika Palle',
         startTime: 319,
         endTime: 368,
         text: "We can do a full shadow-read and dual-write rollout over two sprints. In sprint 1, we deploy Redis in shadow mode and compare cache hits against Memcached. In sprint 2, we shift 10% of tenant traffic, monitor p99 metrics, and ramp up to 100% without any user downtime.",
@@ -129,7 +131,7 @@ export const seededMeetings: Meeting[] = [
       {
         id: 't12',
         speakerId: 'u1',
-        speakerName: 'Pravalika Reddy',
+        speakerName: 'Pravalika Palle',
         startTime: 449,
         endTime: 495,
         text: "Sounds like we have clear consensus. Decision: We approve RFC-204 for the Redis Cluster with mutual TLS and write-through invalidation. Marcus will lead the backend implementation, Dave handles the Terraform infra, and Tom reviews security certificates.",
@@ -291,7 +293,7 @@ export const seededMeetings: Meeting[] = [
         title: 'Approve RFC-204: Redis 7 Cluster Migration',
         description: 'Replace Memcached with multi-node Redis cluster with automatic failover to eliminate hot-sharding bottlenecks.',
         timestampSeconds: 449,
-        decidedBy: 'Pravalika Reddy & Sarah Lin',
+        decidedBy: 'Pravalika Palle & Sarah Lin',
         category: 'architecture'
       },
       {
@@ -307,7 +309,7 @@ export const seededMeetings: Meeting[] = [
         title: 'Enforce Dual-Write Shadow Rollout Strategy',
         description: 'Deploy shadow reads and phased 10% canary traffic ramp over two sprints without user-facing maintenance windows.',
         timestampSeconds: 319,
-        decidedBy: 'Pravalika Reddy',
+        decidedBy: 'Pravalika Palle',
         category: 'timeline'
       }
     ],
@@ -336,7 +338,7 @@ export const seededMeetings: Meeting[] = [
         id: 'hl-3',
         title: 'Zero Downtime Shadow Deployment',
         excerpt: 'We can do a full shadow-read and dual-write rollout over two sprints without any user downtime.',
-        speakerName: 'Pravalika Reddy',
+        speakerName: 'Pravalika Palle',
         timestampSeconds: 319,
         durationSeconds: 49,
         category: 'decision',
@@ -384,7 +386,7 @@ export const seededMeetings: Meeting[] = [
     location: 'Google Meet',
     preview: 'Negotiated 99.99% custom SLA terms, agreed on 500-seat volume tier at $28/seat/mo, and committed to HIPAA BAA execution.',
     participants: [
-      { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Solutions Architect', avatarColor: '#3b82f6', isHost: true },
+      { id: 'u1', name: 'Pravalika Palle', email: 'pravalika@fanthom.ai', role: 'Solutions Architect', avatarColor: '#3b82f6', isHost: true },
       { id: 'u9', name: 'Alex Morgan', email: 'alex.m@fanthom.ai', role: 'Enterprise Account Executive', avatarColor: '#f97316' },
       { id: 'u10', name: 'Jordan Reed', email: 'jreed@acmecorp.com', role: 'VP of Procurement, Acme Corp', avatarColor: '#84cc16' },
       { id: 'u11', name: 'Priya Sharma', email: 'psharma@acmecorp.com', role: 'Director of IT Security, Acme Corp', avatarColor: '#a855f7' }
@@ -413,7 +415,7 @@ export const seededMeetings: Meeting[] = [
       {
         id: 'st3',
         speakerId: 'u1',
-        speakerName: 'Pravalika Reddy',
+        speakerName: 'Pravalika Palle',
         startTime: 59,
         endTime: 102,
         text: "Jordan, that is completely reasonable. Our active-active multi-region deployment across US-East and US-West maintains a sub-second health-check failover. We are confident agreeing to hourly service credit calculations up to 30% of monthly contract value.",
@@ -431,7 +433,7 @@ export const seededMeetings: Meeting[] = [
       {
         id: 'st5',
         speakerId: 'u1',
-        speakerName: 'Pravalika Reddy',
+        speakerName: 'Pravalika Palle',
         startTime: 146,
         endTime: 190,
         text: "Yes, Priya. In our Enterprise tier, we support Customer Managed Encryption Keys (CMEK) via AWS KMS or HashiCorp Vault. If your security team revokes the key in your KMS console, all data immediately becomes unreadable by our systems.",
@@ -529,7 +531,7 @@ export const seededMeetings: Meeting[] = [
           {
             title: 'Sales Engineering Collaboration',
             notes: [
-              'Pravalikas quick technical clarification on CMEK encryption prevented deal delay.',
+              "Pravalika's quick technical clarification on CMEK encryption prevented deal delay.",
               'Template for hourly SLA penalty language can be reused for upcoming global bank prospects.'
             ]
           }
@@ -557,7 +559,7 @@ export const seededMeetings: Meeting[] = [
         id: 'act-sales-2',
         description: 'Provide AWS KMS policy template and IAM role ARN to Priya Sharma',
         assigneeId: 'u1',
-        assigneeName: 'Pravalika Reddy',
+        assigneeName: 'Pravalika Palle',
         dueDate: 'Oct 2, 2026',
         completed: false,
         timestampSeconds: 146,
@@ -578,7 +580,7 @@ export const seededMeetings: Meeting[] = [
         title: 'Enable CMEK KMS Support for Tenant',
         description: 'Commit to Customer Managed Encryption Keys (CMEK) deployment ahead of production onboarding.',
         timestampSeconds: 146,
-        decidedBy: 'Pravalika Reddy',
+        decidedBy: 'Pravalika Palle',
         category: 'product'
       }
     ],
@@ -640,7 +642,7 @@ export const seededMeetings: Meeting[] = [
     location: 'Huddle',
     preview: 'Triaged iOS 18 cold start regression caused by redundant SQLite schema migrations; rolled back prefetch hook to restore 180ms startup.',
     participants: [
-      { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
+      { id: 'u1', name: 'Pravalika Palle', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
       { id: 'u12', name: 'Carlos Mendez', email: 'carlos.m@fanthom.ai', role: 'Lead iOS Engineer', avatarColor: '#eab308' },
       { id: 'u13', name: 'Nina Patel', email: 'nina.p@fanthom.ai', role: 'Staff QA Engineer', avatarColor: '#14b8a6' },
       { id: 'u7', name: 'Rachel Chen', email: 'rachel.c@fanthom.ai', role: 'Director of Product', avatarColor: '#6366f1' }
@@ -649,7 +651,7 @@ export const seededMeetings: Meeting[] = [
       {
         id: 'mt1',
         speakerId: 'u1',
-        speakerName: 'Pravalika Reddy',
+        speakerName: 'Pravalika Palle',
         startTime: 0,
         endTime: 20,
         text: "Let's dive right into the iOS crash and latency telemetry. Our Sentry dashboard showed app launch times jumping from 190ms to 840ms after v4.2.1 shipped.",
@@ -678,7 +680,7 @@ export const seededMeetings: Meeting[] = [
       {
         id: 'mt4',
         speakerId: 'u1',
-        speakerName: 'Pravalika Reddy',
+        speakerName: 'Pravalika Palle',
         startTime: 89,
         endTime: 125,
         text: "Let's decouple the schema check from app launch. We can move database integrity checks and WAL checkpointing to a background dispatch queue with a 2-second delay after initial view appearance.",
@@ -795,7 +797,7 @@ export const seededMeetings: Meeting[] = [
         title: 'Asynchronous Mobile Database Initialization',
         description: 'Ban synchronous SQLite schema queries on the main thread; enforce async background queue dispatch.',
         timestampSeconds: 89,
-        decidedBy: 'Pravalika Reddy & Carlos Mendez',
+        decidedBy: 'Pravalika Palle & Carlos Mendez',
         category: 'architecture'
       }
     ],
@@ -847,7 +849,7 @@ export const seededMeetings: Meeting[] = [
     preview: 'Discussed expanding architectural leadership scope to cover cross-team real-time streaming infrastructure and mentoring mid-level engineers.',
     participants: [
       { id: 'u3', name: 'Sarah Lin', email: 'sarah.lin@fanthom.ai', role: 'VP of Engineering', avatarColor: '#8b5cf6', isHost: true },
-      { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6' }
+      { id: 'u1', name: 'Pravalika Palle', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6' }
     ],
     transcript: [
       {
@@ -862,7 +864,7 @@ export const seededMeetings: Meeting[] = [
       {
         id: 'ot2',
         speakerId: 'u1',
-        speakerName: 'Pravalika Reddy',
+        speakerName: 'Pravalika Palle',
         startTime: 29,
         endTime: 64,
         text: "Thank you Sarah! I really enjoyed working through the tradeoffs with Elena and Tom on the GDPR and mutual TLS requirements. I feel like we got everyone aligned around the right long-term architecture rather than a quick patch.",
@@ -882,7 +884,7 @@ export const seededMeetings: Meeting[] = [
     ],
     summaries: {
       general: {
-        overview: '1:1 sync between Sarah Lin and Pravalika Reddy reviewing performance and mapping out the promotion trajectory toward Principal Architect.',
+        overview: '1:1 sync between Sarah Lin and Pravalika Palle reviewing performance and mapping out the promotion trajectory toward Principal Architect.',
         keyTopics: [
           {
             title: 'Guild Leadership Feedback',
@@ -947,7 +949,7 @@ export const seededMeetings: Meeting[] = [
         id: 'act-1on1-1',
         description: 'Draft technical charter for H1 real-time streaming audio ingestion pipeline',
         assigneeId: 'u1',
-        assigneeName: 'Pravalika Reddy',
+        assigneeName: 'Pravalika Palle',
         dueDate: 'Oct 10, 2026',
         completed: false,
         timestampSeconds: 65,
@@ -958,7 +960,7 @@ export const seededMeetings: Meeting[] = [
       {
         id: 'dec-1on1-1',
         title: 'Nomination for Principal Architect Role',
-        description: 'Sarah Lin confirmed sponsorship for Pravalikas promotion packet in Q1 cycle.',
+        description: "Sarah Lin confirmed sponsorship for Pravalika's promotion packet in Q1 cycle.",
         timestampSeconds: 65,
         decidedBy: 'Sarah Lin',
         category: 'process'
@@ -1010,7 +1012,7 @@ export const seededMeetings: Meeting[] = [
     preview: 'Pre-meeting preparation: align on Redis 7 Raft cluster deployment ownership, review staging failover benchmarks, and sign off on dual-write cutover.',
     relatedMeetingId: 'meeting-arch-q4',
     participants: [
-      { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
+      { id: 'u1', name: 'Pravalika Palle', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
       { id: 'u2', name: 'Marcus Vance', email: 'marcus.v@fanthom.ai', role: 'Principal Backend Engineer', avatarColor: '#10b981' },
       { id: 'u3', name: 'Sarah Lin', email: 'sarah.lin@fanthom.ai', role: 'VP of Engineering', avatarColor: '#8b5cf6' },
       { id: 'u4', name: 'Dave Kowalski', email: 'dave.k@fanthom.ai', role: 'SRE Infrastructure Lead', avatarColor: '#f59e0b' },
@@ -1061,7 +1063,7 @@ export const seededMeetings: Meeting[] = [
         {
           id: 'comm-2',
           actionItemId: 'a-2',
-          assigneeName: 'Pravalika Reddy',
+          assigneeName: 'Pravalika Palle',
           description: 'Draft zero-downtime shadow rollout plan with automatic rollback thresholds',
           dueDate: '2026-10-03',
           completed: false,
@@ -1170,7 +1172,7 @@ export const seededMeetings: Meeting[] = [
     preview: 'Pre-meeting preparation: verify signed $28/seat 2-year contract, review AWS KMS key policy for tenant CMEK, and introduce dedicated onboarding engineer.',
     relatedMeetingId: 'meeting-sales-acme',
     participants: [
-      { id: 'u1', name: 'Pravalika Reddy', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
+      { id: 'u1', name: 'Pravalika Palle', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
       { id: 'u7', name: 'Rachel Chen', email: 'rachel.c@fanthom.ai', role: 'Director of Product', avatarColor: '#6366f1' },
       { id: 'u10', name: 'Jordan Reed', email: 'jreed@acmecorp.com', role: 'VP of Procurement, Acme Corp', avatarColor: '#84cc16' },
       { id: 'u11', name: 'Priya Sharma', email: 'psharma@acmecorp.com', role: 'Director of IT Security, Acme Corp', avatarColor: '#a855f7' },

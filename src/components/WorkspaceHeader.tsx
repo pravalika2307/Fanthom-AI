@@ -79,6 +79,16 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             >
               {meeting.participants.length} participants: {participantsSummary}
             </span>
+            <span className="meta-dot">·</span>
+            {meeting.status === 'upcoming' ? (
+              <span className="brief-status-subtle">
+                UPCOMING · NOT YET RECORDED
+              </span>
+            ) : (
+              <span className="recorded-playback-pill">
+                RECORDED · PLAYBACK AVAILABLE
+              </span>
+            )}
           </div>
 
           {/* Connected Meeting Signals Strip */}

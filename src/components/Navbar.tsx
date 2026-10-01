@@ -80,8 +80,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span>Record Sync</span>
         </button>
 
-        <span className="user-initials-badge" title="Pravalika Reddy (Host)">
-          PR
+        <span className="user-initials-badge" title="Pravalika Palle (Host)">
+          PP
         </span>
       </div>
     </header>

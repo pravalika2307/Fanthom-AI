@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { seededMeetings } from './data/seededMeetings';
 import { Meeting, SummaryTemplate, ActionItem, Highlight } from './types';
 import { Navbar } from './components/Navbar';
@@ -33,6 +33,9 @@ export const App: React.FC = () => {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
   const [highlightQuery, setHighlightQuery] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Native HTMLAudioElement reference for genuine spoken audio playback
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Action Item Modal state
   const [actionModal, setActionModal] = useState<{
@@ -86,7 +89,9 @@ export const App: React.FC = () => {
     return meetings.find((m) => m.status === 'completed') || meetings[0];
   }, [meetings, selectedMeetingId]);
 
-  const totalDurationSeconds = activeMeeting ? activeMeeting.durationMinutes * 60 : 0;
+  const totalDurationSeconds = activeMeeting
+    ? (activeMeeting.audioDurationSeconds || activeMeeting.durationMinutes * 60)
+    : 0;
 
   // URL Hash Parsing & Deep Linking: #meeting=<id>&t=<seconds>&quote=<encodedQuote>&share=1 or #brief=<id>
   useEffect(() => {
@@ -165,9 +170,50 @@ export const App: React.FC = () => {
     }
   }, [selectedMeetingId]);
 
-  // Simulated Playback Timer
+  // Native HTMLAudioElement Playback & Synchronization
   useEffect(() => {
-    if (!isPlaying) return;
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (activeMeeting.audioUrl) {
+      if (!audio.src.endsWith(activeMeeting.audioUrl)) {
+        audio.src = activeMeeting.audioUrl;
+        audio.load();
+      }
+    } else {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    }
+  }, [activeMeeting.id, activeMeeting.audioUrl]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !activeMeeting.audioUrl) return;
+
+    if (isPlaying) {
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('Audio play prevented or interrupted:', err);
+          setIsPlaying(false);
+        });
+      }
+    } else {
+      audio.pause();
+    }
+  }, [isPlaying, activeMeeting.audioUrl]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
+
+  // Fallback timer ONLY when meeting has no real audio file (never run when audioUrl is present)
+  useEffect(() => {
+    if (!isPlaying || activeMeeting.audioUrl) return;
 
     const intervalMs = Math.round(1000 / playbackSpeed);
     const interval = setInterval(() => {
@@ -181,12 +227,44 @@ export const App: React.FC = () => {
     }, intervalMs);
 
     return () => clearInterval(interval);
-  }, [isPlaying, playbackSpeed, totalDurationSeconds]);
+  }, [isPlaying, playbackSpeed, totalDurationSeconds, activeMeeting.audioUrl]);
+
+  const handleSeek = (newTime: number) => {
+    const clamped = Math.max(0, Math.min(totalDurationSeconds, newTime));
+    setPlaybackTime(clamped);
+    const audio = audioRef.current;
+    if (audio && activeMeeting.audioUrl) {
+      audio.currentTime = clamped;
+    }
+    window.location.hash = `#meeting=${activeMeeting.id}&t=${Math.round(clamped)}`;
+  };
+
+  const handlePlayFromHere = (sec: number) => {
+    handleSeek(sec);
+    setIsPlaying(true);
+    const audio = audioRef.current;
+    if (audio && activeMeeting.audioUrl) {
+      audio.currentTime = sec;
+      audio.play().catch((err) => console.warn('Audio play error:', err));
+    }
+  };
+
+  const handleTogglePlayPause = () => {
+    const audio = audioRef.current;
+    if (isPlaying) {
+      setIsPlaying(false);
+      audio?.pause();
+    } else {
+      setIsPlaying(true);
+      if (audio && activeMeeting.audioUrl) {
+        audio.play().catch((err) => console.warn('Audio play error:', err));
+      }
+    }
+  };
 
   // Global Keyboard Shortcuts (Cmd/Ctrl + K for search, Space to play/pause, J/L to seek)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + K opens search modal anywhere
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
         setIsSearchModalOpen((prev) => !prev);
@@ -203,17 +281,17 @@ export const App: React.FC = () => {
         setIsSearchModalOpen(true);
       } else if (e.code === 'Space') {
         e.preventDefault();
-        setIsPlaying((prev) => !prev);
+        handleTogglePlayPause();
       } else if (e.key === 'j' || e.key === 'J') {
-        setPlaybackTime((prev) => Math.max(0, prev - 10));
+        handleSeek(playbackTime - 10);
       } else if (e.key === 'l' || e.key === 'L') {
-        setPlaybackTime((prev) => Math.min(totalDurationSeconds, prev + 10));
+        handleSeek(playbackTime + 10);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [totalDurationSeconds]);
+  }, [totalDurationSeconds, playbackTime, isPlaying, activeMeeting.audioUrl]);
 
   // Determine current active speaker
   const currentSegment = activeMeeting?.transcript.find(
@@ -576,10 +654,7 @@ ${activeMeeting.actionItems
             <button
               className="btn-primary"
               style={{ padding: '3px 8px', fontSize: '11px' }}
-              onClick={() => {
-                setPlaybackTime(sharedMomentInfo.timestamp);
-                setIsPlaying(true);
-              }}
+              onClick={() => handlePlayFromHere(sharedMomentInfo.timestamp)}
             >
               <Play size={11} />
               <span>Play Moment</span>
@@ -645,10 +720,7 @@ ${activeMeeting.actionItems
                 mobileActivePane={mobilePane}
                 onMobilePaneToggle={setMobilePane}
                 onSelectTab={(tab) => setIndexTab(tab)}
-                onSeek={(sec) => {
-                  setPlaybackTime(sec);
-                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
-                }}
+                onSeek={handleSeek}
               />
 
               {/* Meeting Pulse: Timeline Activity, Markers & Rhythm */}
@@ -656,10 +728,7 @@ ${activeMeeting.actionItems
                 meeting={activeMeeting}
                 currentTime={playbackTime}
                 totalDurationSeconds={totalDurationSeconds}
-                onSeek={(sec) => {
-                  setPlaybackTime(sec);
-                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
-                }}
+                onSeek={handleSeek}
                 activeSpeakerFilter={speakerFilter}
                 onSpeakerFilterChange={setSpeakerFilter}
                 onSelectIndexTab={(tab) => setIndexTab(tab)}
@@ -669,11 +738,8 @@ ${activeMeeting.actionItems
                 currentTime={playbackTime}
                 totalDurationSeconds={totalDurationSeconds}
                 isPlaying={isPlaying}
-                onPlayPauseToggle={() => setIsPlaying(!isPlaying)}
-                onSeek={(sec) => {
-                  setPlaybackTime(sec);
-                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
-                }}
+                onPlayPauseToggle={handleTogglePlayPause}
+                onSeek={handleSeek}
                 playbackSpeed={playbackSpeed}
                 onSpeedChange={setPlaybackSpeed}
                 currentSpeakerName={currentSegment?.speakerName}
@@ -681,6 +747,7 @@ ${activeMeeting.actionItems
                 decisions={activeMeeting.decisions}
                 highlights={activeMeeting.highlights}
                 actionItems={activeMeeting.actionItems}
+                hasAudio={Boolean(activeMeeting.audioUrl)}
               />
 
               <TranscriptView
@@ -691,15 +758,8 @@ ${activeMeeting.actionItems
                 sharedQuote={sharedMomentInfo?.quote}
                 activeSpeakerFilter={speakerFilter}
                 onClearSpeakerFilter={() => setSpeakerFilter(null)}
-                onSeek={(sec) => {
-                  setPlaybackTime(sec);
-                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
-                }}
-                onPlayFromHere={(sec) => {
-                  setPlaybackTime(sec);
-                  setIsPlaying(true);
-                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
-                }}
+                onSeek={handleSeek}
+                onPlayFromHere={handlePlayFromHere}
                 onCopyQuote={handleCopyQuote}
                 onRequestActionModal={handleRequestActionModal}
                 onRequestShareModal={handleRequestShareModal}
@@ -721,15 +781,8 @@ ${activeMeeting.actionItems
                 onAddActionItem={handleAddActionItem}
                 activeTab={indexTab}
                 onTabChange={setIndexTab}
-                onSeek={(sec) => {
-                  setPlaybackTime(sec);
-                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
-                }}
-                onPlayFromHere={(sec) => {
-                  setPlaybackTime(sec);
-                  setIsPlaying(true);
-                  window.location.hash = `#meeting=${activeMeeting.id}&t=${sec}`;
-                }}
+                onSeek={handleSeek}
+                onPlayFromHere={handlePlayFromHere}
                 onCopyText={(text, label) => {
                   navigator.clipboard?.writeText(text);
                   showToast(label);
@@ -739,6 +792,25 @@ ${activeMeeting.actionItems
           </div>
         )}
       </main>
+
+      {/* Native Browser Spoken Audio Element for True Recorded Playback */}
+      <audio
+        ref={audioRef}
+        preload="auto"
+        onTimeUpdate={(e) => {
+          setPlaybackTime(e.currentTarget.currentTime);
+        }}
+        onEnded={() => {
+          setIsPlaying(false);
+          setPlaybackTime(totalDurationSeconds);
+        }}
+        onPause={() => {
+          setIsPlaying(false);
+        }}
+        onPlay={() => {
+          setIsPlaying(true);
+        }}
+      />
 
       {/* Global Cross-Meeting Search Modal (Cmd/Ctrl + K) */}
       <SearchModal

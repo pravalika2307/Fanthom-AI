@@ -26,7 +26,7 @@ export const ActionItemModal: React.FC<ActionItemModalProps> = ({
 }) => {
   const [description, setDescription] = useState('');
   const [assigneeName, setAssigneeName] = useState(
-    participants[0]?.name || 'Pravalika Reddy'
+    participants[0]?.name || 'Pravalika Palle'
   );
   const [dueDate, setDueDate] = useState('2026-10-06');
 
@@ -37,7 +37,7 @@ export const ActionItemModal: React.FC<ActionItemModalProps> = ({
         ? `Follow up with ${speakerName}: "${cleanQuote.slice(0, 68)}..."`
         : `Follow up with ${speakerName}: "${cleanQuote}"`;
       setDescription(initialDesc);
-      setAssigneeName(participants[0]?.name || 'Pravalika Reddy');
+      setAssigneeName(participants[0]?.name || 'Pravalika Palle');
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {

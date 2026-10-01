@@ -16,6 +16,7 @@ interface PlayerBarProps {
   decisions: Decision[];
   highlights: Highlight[];
   actionItems?: ActionItem[];
+  hasAudio?: boolean;
 }
 
 export const PlayerBar: React.FC<PlayerBarProps> = ({
@@ -30,6 +31,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
   decisions,
   highlights,
   actionItems = [],
+  hasAudio = true,
 }) => {
   const scrubberRef = useRef<HTMLDivElement>(null);
   const [hoveredEvent, setHoveredEvent] = React.useState<{
@@ -220,14 +222,29 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
 
         {/* Center / Right: Speaker Status and Speed */}
         <div className="player-right-group">
-          {currentSpeakerName ? (
-            <span className="active-speaker-label">
-              <span className="speaking-dot" />
-              {currentSpeakerName} speaking
-            </span>
-          ) : (
-            <span className="active-speaker-label idle">Audio paused</span>
-          )}
+          <div className="player-status-cluster">
+            {!hasAudio ? (
+              <span className="audio-state-tag unavailable">
+                Recording unavailable
+              </span>
+            ) : isPlaying ? (
+              <span className="audio-state-tag playing">
+                <span className="audio-rec-dot" />
+                Recording playing
+              </span>
+            ) : (
+              <span className="audio-state-tag paused">
+                Recording paused
+              </span>
+            )}
+
+            {currentSpeakerName && isPlaying && (
+              <span className="active-speaker-label">
+                <span className="speaking-dot" />
+                {currentSpeakerName} speaking
+              </span>
+            )}
+          </div>
 
           <div className="player-speed-options">
             {[0.75, 1.0, 1.25, 1.5, 2.0].map((speed) => (

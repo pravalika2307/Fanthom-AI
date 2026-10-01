@@ -54,11 +54,11 @@ export const ContextRail: React.FC<ContextRailProps> = ({
   const [isAddingAction, setIsAddingAction] = useState(false);
   const [newActionText, setNewActionText] = useState('');
   const [newActionAssignee, setNewActionAssignee] = useState(
-    meeting.participants[0]?.name || 'Pravalika Reddy'
+    meeting.participants[0]?.name || 'Pravalika Palle'
   );
   const [newActionDueDate, setNewActionDueDate] = useState('2026-10-05');
 
-  const currentUser = 'Pravalika Reddy';
+  const currentUser = 'Pravalika Palle';
   const summaryData = meeting.summaries[activeTemplate] || meeting.summaries.general;
 
   const handleCreateAction = (e: React.FormEvent) => {

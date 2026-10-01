@@ -27,7 +27,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | MeetingCategory>('all');
   const [onlyMyActions, setOnlyMyActions] = useState<boolean>(false);
 
-  const currentUser = 'Pravalika Reddy';
+  const currentUser = 'Pravalika Palle';
 
   // Separate upcoming and completed
   const upcomingMeetings = meetings.filter((m) => m.status === 'upcoming');

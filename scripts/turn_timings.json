@@ -1,0 +1,137 @@
+{
+  "totalDurationSeconds": 204,
+  "turns": [
+    {
+      "id": "t1",
+      "speakerId": "u1",
+      "speakerName": "Pravalika Palle",
+      "startTime": 0,
+      "endTime": 14,
+      "startTimeFloat": 0.0,
+      "endTimeFloat": 14.21,
+      "duration": 14.21,
+      "text": "Thanks everyone for dialing into the Q4 core architecture sync. Today we need a definitive decision on our distributed caching tier. Our current Memcached cluster is hitting hot-shard limits during morning spikes."
+    },
+    {
+      "id": "t2",
+      "speakerId": "u2",
+      "speakerName": "Marcus Vance",
+      "startTime": 15,
+      "endTime": 35,
+      "startTimeFloat": 14.96,
+      "endTimeFloat": 34.84,
+      "duration": 19.88,
+      "text": "Right. The primary issue is p99 latency climbing past 450 milliseconds whenever three enterprise clients sync their calendar indexes simultaneously. I evaluated two proposals: upgrading our Memcached topology with consistent hashing, versus migrating to a multi-node Redis cluster with active read-replicas."
+    },
+    {
+      "id": "t3",
+      "speakerId": "u4",
+      "speakerName": "Dave Kowalski",
+      "startTime": 36,
+      "endTime": 56,
+      "startTimeFloat": 35.59,
+      "endTimeFloat": 55.55,
+      "duration": 19.96,
+      "text": "From an SRE perspective, operating standalone Memcached instances across three AWS availability zones has caused intermittent split-brain scenarios when VPC peering drops. Redis 7 with failover automation would cut our on-call pages by at least forty percent."
+    },
+    {
+      "id": "t4",
+      "speakerId": "u8",
+      "speakerName": "Tom Becker",
+      "startTime": 56,
+      "endTime": 72,
+      "startTimeFloat": 56.3,
+      "endTimeFloat": 72.38,
+      "duration": 16.08,
+      "text": "Before we get too excited about Redis, what is our encryption in transit policy? We handle SOC2 Type II and HIPAA data for our healthcare clients. We cannot allow unencrypted TLS payloads between cache nodes."
+    },
+    {
+      "id": "t5",
+      "speakerId": "u1",
+      "speakerName": "Pravalika Palle",
+      "startTime": 73,
+      "endTime": 94,
+      "startTimeFloat": 73.13,
+      "endTimeFloat": 94.06,
+      "duration": 20.93,
+      "text": "Good call, Tom. The architecture RFC mandates mutual TLS on port 6380 with automated Let's Encrypt certificate rotation via HashiCorp Vault. In addition, sensitive meeting tokens will be encrypted at the application layer with AES-256-GCM before touching the cache."
+    },
+    {
+      "id": "t6",
+      "speakerId": "u5",
+      "speakerName": "Elena Rostova",
+      "startTime": 95,
+      "endTime": 114,
+      "startTimeFloat": 94.81,
+      "endTimeFloat": 113.92,
+      "duration": 19.11,
+      "text": "How are we invalidating stale meeting metadata? If an organizer deletes a recording, GDPR mandates immediate purging. If we use write-behind caching, there is a risk of a 30-second window where deleted recordings could still be served from cache."
+    },
+    {
+      "id": "t7",
+      "speakerId": "u2",
+      "speakerName": "Marcus Vance",
+      "startTime": 115,
+      "endTime": 128,
+      "startTimeFloat": 114.67,
+      "endTimeFloat": 127.74,
+      "duration": 13.07,
+      "text": "That is why I recommend strictly write-through caching with dual-write to PostgreSQL, backed by a Kafka dead-letter queue for retries. If the cache invalidation event fails, the replica automatically flags the key as expired."
+    },
+    {
+      "id": "t8",
+      "speakerId": "u3",
+      "speakerName": "Sarah Lin",
+      "startTime": 128,
+      "endTime": 137,
+      "startTimeFloat": 128.49,
+      "endTimeFloat": 137.48,
+      "duration": 8.99,
+      "text": "What does the migration path look like for live users? Can we do a zero-downtime blue-green cutover, or will we need a scheduled maintenance window over a weekend?"
+    },
+    {
+      "id": "t9",
+      "speakerId": "u1",
+      "speakerName": "Pravalika Palle",
+      "startTime": 138,
+      "endTime": 159,
+      "startTimeFloat": 138.23,
+      "endTimeFloat": 159.32,
+      "duration": 21.08,
+      "text": "We can do a full shadow-read and dual-write rollout over two sprints. In sprint 1, we deploy Redis in shadow mode and compare cache hits against Memcached. In sprint 2, we shift 10% of tenant traffic, monitor p99 metrics, and ramp up to 100% without any user downtime."
+    },
+    {
+      "id": "t10",
+      "speakerId": "u7",
+      "speakerName": "Rachel Chen",
+      "startTime": 160,
+      "endTime": 174,
+      "startTimeFloat": 160.07,
+      "endTimeFloat": 173.97,
+      "duration": 13.9,
+      "text": "That timeline aligns well with the enterprise launch we have scheduled for late October. Sales has three Fortune 500 pilots waiting on our 99.99% uptime commitment."
+    },
+    {
+      "id": "t11",
+      "speakerId": "u6",
+      "speakerName": "James Thornton",
+      "startTime": 175,
+      "endTime": 184,
+      "startTimeFloat": 174.72,
+      "endTimeFloat": 184.47,
+      "duration": 9.75,
+      "text": "On the frontend, if cache responses drop to under 50ms, we can remove the optimistic retry debouncing in the meeting player, which immediately simplifies the state machine in React."
+    },
+    {
+      "id": "t12",
+      "speakerId": "u1",
+      "speakerName": "Pravalika Palle",
+      "startTime": 185,
+      "endTime": 204,
+      "startTimeFloat": 185.22,
+      "endTimeFloat": 203.74,
+      "duration": 18.52,
+      "text": "Sounds like we have clear consensus. Decision: We approve RFC-204 for the Redis Cluster with mutual TLS and write-through invalidation. Marcus will lead the backend implementation, Dave handles the Terraform infra, and Tom reviews security certificates."
+    }
+  ]
+}

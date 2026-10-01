@@ -139,6 +139,8 @@ export interface Meeting {
   participants: Participant[];
   preview: string;
   location?: string;
+  audioUrl?: string;
+  audioDurationSeconds?: number;
   transcript: TranscriptSegment[];
   summaries: Record<SummaryTemplate, TemplateSummary>;
   actionItems: ActionItem[];
