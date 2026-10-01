@@ -14,6 +14,7 @@ import { Toast } from './components/Toast';
 import { PreMeetingBriefView } from './components/PreMeetingBriefView';
 import { MeetingPulse } from './components/MeetingPulse';
 import { formatSeconds } from './utils/formatters';
+import { generateMeetingMarkdown, generateMeetingJson, triggerBrowserDownload } from './utils/exportMeeting';
 import { Play } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -686,36 +687,25 @@ export const App: React.FC = () => {
     });
   };
 
-  const handleExportMeeting = () => {
-    const summary = activeMeeting.summaries[activeTemplate];
-    const exportContent = `# ${activeMeeting.title}
-Date: ${activeMeeting.date}
-Duration: ${activeMeeting.durationMinutes} minutes
-Location: ${activeMeeting.location || 'Virtual'}
+  const handleExportMeeting = (format: 'markdown' | 'json' | 'copy' = 'markdown') => {
+    if (format === 'json') {
+      const jsonContent = generateMeetingJson(activeMeeting);
+      triggerBrowserDownload(`${activeMeeting.id}-artifact.json`, jsonContent, 'application/json');
+      showToast(`Exported full meeting JSON (${activeMeeting.id}-artifact.json)`);
+      return;
+    }
 
-## Overview
-${summary.overview}
+    const markdownContent = generateMeetingMarkdown(activeMeeting, activeTemplate);
 
-## Key Topics
-${summary.keyTopics
-  .map(
-    (topic) =>
-      `### ${topic.title}\n${topic.notes.map((n) => `- ${n}`).join('\n')}`
-  )
-  .join('\n\n')}
+    if (format === 'copy') {
+      navigator.clipboard?.writeText(markdownContent);
+      showToast('Copied full executive Markdown to clipboard');
+      return;
+    }
 
-## Decisions Recorded
-${activeMeeting.decisions
-  .map((d) => `- [${d.category.toUpperCase()}] ${d.title}: ${d.description} (Agreed by ${d.decidedBy})`)
-  .join('\n')}
-
-## Action Items
-${activeMeeting.actionItems
-  .map((a) => `- [${a.completed ? 'x' : ' '}] ${a.description} (@${a.assigneeName}, Due: ${a.dueDate})`)
-  .join('\n')}
-`;
-    navigator.clipboard?.writeText(exportContent);
-    showToast('Exported complete Markdown report to clipboard');
+    // Default: download markdown file
+    triggerBrowserDownload(`${activeMeeting.id}-brief.md`, markdownContent, 'text/markdown;charset=utf-8');
+    showToast(`Downloaded executive Markdown (${activeMeeting.id}-brief.md)`);
   };
 
   const handleSimulateNewMeeting = () => {

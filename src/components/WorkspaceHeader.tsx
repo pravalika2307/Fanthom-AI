@@ -19,7 +19,7 @@ interface WorkspaceHeaderProps {
   meeting: Meeting;
   onBackToDashboard: () => void;
   onShareMeeting: () => void;
-  onExportMeeting: () => void;
+  onExportMeeting: (format: 'markdown' | 'json' | 'copy') => void;
   onOpenBrief?: (meetingId: string) => void;
   mobileActivePane?: 'transcript' | 'intel';
   onMobilePaneToggle?: (pane: 'transcript' | 'intel') => void;
@@ -44,6 +44,23 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   const participantsSummary = remainingCount > 0
     ? `${primaryParticipants} + ${remainingCount} others`
     : primaryParticipants;
+
+  const [showExportMenu, setShowExportMenu] = React.useState(false);
+  const exportMenuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    if (showExportMenu) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [showExportMenu]);
 
   return (
     <div className="workspace-header">
@@ -123,14 +140,60 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             <span>Share</span>
           </button>
 
-          <button
-            className="btn-outline-quiet"
-            onClick={onExportMeeting}
-            title="Export complete Markdown report"
-          >
-            <Download size={13} />
-            <span>Export</span>
-          </button>
+          <div className="export-dropdown-wrapper" ref={exportMenuRef} style={{ position: 'relative' }}>
+            <button
+              className="btn-outline-quiet"
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              title="Export meeting artifact"
+            >
+              <Download size={13} />
+              <span>Export</span>
+            </button>
+
+            {showExportMenu && (
+              <div className="export-menu-popover">
+                <button
+                  className="export-menu-item"
+                  onClick={() => {
+                    onExportMeeting('markdown');
+                    setShowExportMenu(false);
+                  }}
+                >
+                  <FileText size={13} />
+                  <div className="export-item-details">
+                    <span className="export-item-title">Download Markdown (.md)</span>
+                    <span className="export-item-desc">Executive summary, decisions, actions & transcript</span>
+                  </div>
+                </button>
+                <button
+                  className="export-menu-item"
+                  onClick={() => {
+                    onExportMeeting('json');
+                    setShowExportMenu(false);
+                  }}
+                >
+                  <Download size={13} />
+                  <div className="export-item-details">
+                    <span className="export-item-title">Download JSON (.json)</span>
+                    <span className="export-item-desc">Structured meeting data schema for integrations</span>
+                  </div>
+                </button>
+                <button
+                  className="export-menu-item"
+                  onClick={() => {
+                    onExportMeeting('copy');
+                    setShowExportMenu(false);
+                  }}
+                >
+                  <Share2 size={13} />
+                  <div className="export-item-details">
+                    <span className="export-item-title">Copy Markdown</span>
+                    <span className="export-item-desc">Copy document directly to system clipboard</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
