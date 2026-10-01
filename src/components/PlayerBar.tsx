@@ -76,7 +76,8 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
 
           {/* Semantic Event Markers: Decisions (◆), Highlights (●), Actions (□) */}
           {decisions.map((dec) => {
-            const markerPos = (dec.timestampSeconds / totalDurationSeconds) * 100;
+            const decTime = (hasAudio && dec.demoTimestampSeconds !== undefined) ? dec.demoTimestampSeconds : dec.timestampSeconds;
+            const markerPos = (decTime / totalDurationSeconds) * 100;
             return (
               <button
                 key={dec.id}
@@ -84,20 +85,20 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
                 style={{ left: `${markerPos}%` }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onSeek(dec.timestampSeconds);
+                  onSeek(decTime);
                 }}
                 onMouseEnter={() =>
                   setHoveredEvent({
                     type: 'Decision',
                     symbol: '◆',
                     title: dec.title,
-                    time: dec.timestampSeconds,
+                    time: decTime,
                     color: 'var(--accent-emerald)',
                     posPct: markerPos,
                   })
                 }
                 onMouseLeave={() => setHoveredEvent(null)}
-                title={`Decision: ${dec.title} (${formatSeconds(dec.timestampSeconds)})`}
+                title={`Decision: ${dec.title} (${formatSeconds(decTime)})`}
               >
                 ◆
               </button>
@@ -105,7 +106,8 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
           })}
 
           {highlights.map((hl) => {
-            const markerPos = (hl.timestampSeconds / totalDurationSeconds) * 100;
+            const hlTime = (hasAudio && hl.demoTimestampSeconds !== undefined) ? hl.demoTimestampSeconds : hl.timestampSeconds;
+            const markerPos = (hlTime / totalDurationSeconds) * 100;
             return (
               <button
                 key={hl.id}
@@ -113,20 +115,20 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
                 style={{ left: `${markerPos}%` }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onSeek(hl.timestampSeconds);
+                  onSeek(hlTime);
                 }}
                 onMouseEnter={() =>
                   setHoveredEvent({
                     type: 'Highlight',
                     symbol: '●',
                     title: hl.title,
-                    time: hl.timestampSeconds,
+                    time: hlTime,
                     color: 'var(--accent-cyan)',
                     posPct: markerPos,
                   })
                 }
                 onMouseLeave={() => setHoveredEvent(null)}
-                title={`Highlight: "${hl.title}" (${formatSeconds(hl.timestampSeconds)})`}
+                title={`Highlight: "${hl.title}" (${formatSeconds(hlTime)})`}
               >
                 ●
               </button>
@@ -134,9 +136,10 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
           })}
 
           {actionItems
-            .filter((a) => a.timestampSeconds && a.timestampSeconds > 0)
+            .filter((a) => (a.demoTimestampSeconds !== undefined && a.demoTimestampSeconds > 0) || (a.timestampSeconds && a.timestampSeconds > 0))
             .map((act) => {
-              const markerPos = (act.timestampSeconds! / totalDurationSeconds) * 100;
+              const actTime = (hasAudio && act.demoTimestampSeconds !== undefined) ? act.demoTimestampSeconds : act.timestampSeconds!;
+              const markerPos = (actTime / totalDurationSeconds) * 100;
               return (
                 <button
                   key={act.id}
@@ -144,20 +147,20 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
                   style={{ left: `${markerPos}%` }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onSeek(act.timestampSeconds!);
+                    onSeek(actTime);
                   }}
                   onMouseEnter={() =>
                     setHoveredEvent({
                       type: 'Action Item',
                       symbol: '□',
                       title: act.description,
-                      time: act.timestampSeconds!,
+                      time: actTime,
                       color: 'var(--accent-amber)',
                       posPct: markerPos,
                     })
                   }
                   onMouseLeave={() => setHoveredEvent(null)}
-                  title={`Action: ${act.description} (${formatSeconds(act.timestampSeconds!)})`}
+                  title={`Action: ${act.description} (${formatSeconds(actTime)})`}
                 >
                   □
                 </button>
@@ -225,16 +228,16 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
           <div className="player-status-cluster">
             {!hasAudio ? (
               <span className="audio-state-tag unavailable">
-                Recording unavailable
+                UPCOMING · NOT YET RECORDED
               </span>
             ) : isPlaying ? (
               <span className="audio-state-tag playing">
                 <span className="audio-rec-dot" />
-                Recording playing
+                RECORDED · 03:04 DEMO
               </span>
             ) : (
               <span className="audio-state-tag paused">
-                Recording paused
+                RECORDED · CONDENSED DEMO
               </span>
             )}
 

@@ -327,10 +327,13 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
                       <span className="meta-sep">·</span>
                       <button
                         className="decision-time-link"
-                        onClick={() => onSeek(decision.timestampSeconds)}
-                        title={`Jump to ${formatSeconds(decision.timestampSeconds)}`}
+                        onClick={() => {
+                          const decTime = (meeting.audioUrl && decision.demoTimestampSeconds !== undefined) ? decision.demoTimestampSeconds : decision.timestampSeconds;
+                          onSeek(decTime);
+                        }}
+                        title={`Jump to ${formatSeconds((meeting.audioUrl && decision.demoTimestampSeconds !== undefined) ? decision.demoTimestampSeconds : decision.timestampSeconds)}`}
                       >
-                        {formatSeconds(decision.timestampSeconds)}
+                        {formatSeconds((meeting.audioUrl && decision.demoTimestampSeconds !== undefined) ? decision.demoTimestampSeconds : decision.timestampSeconds)}
                       </button>
                     </div>
                     {decision.description && (
@@ -449,15 +452,18 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
                         {action.assigneeName} · due {action.dueDate}
                       </span>
                     </div>
-                    {action.timestampSeconds !== undefined && action.timestampSeconds > 0 && (
-                      <button
-                        className="time-affordance-btn"
-                        onClick={() => onSeek(action.timestampSeconds!)}
-                        title={`Jump to ${formatSeconds(action.timestampSeconds)}`}
-                      >
-                        {formatSeconds(action.timestampSeconds)}
-                      </button>
-                    )}
+                    {((action.demoTimestampSeconds !== undefined && action.demoTimestampSeconds > 0) || (action.timestampSeconds !== undefined && action.timestampSeconds > 0)) && (() => {
+                      const actTime = (meeting.audioUrl && action.demoTimestampSeconds !== undefined) ? action.demoTimestampSeconds : action.timestampSeconds!;
+                      return (
+                        <button
+                          className="time-affordance-btn"
+                          onClick={() => onSeek(actTime)}
+                          title={`Jump to ${formatSeconds(actTime)}`}
+                        >
+                          {formatSeconds(actTime)}
+                        </button>
+                      );
+                    })()}
                   </div>
                 ))
               )}
@@ -476,30 +482,33 @@ ${summaryData.nextSteps.map((s) => `* ${s}`).join('\n')}
             </div>
 
             <div className="editorial-rows-list">
-              {meeting.highlights.map((highlight) => (
-                <div
-                  key={highlight.id}
-                  className="editorial-highlight-row"
-                  onClick={() => onPlayFromHere(highlight.timestampSeconds)}
-                  title="Click to seek and play excerpt"
-                >
-                  <blockquote className="highlight-quote-text">
-                    "{highlight.excerpt}"
-                  </blockquote>
-                  <div className="highlight-meta-row">
-                    <span className="highlight-speaker">{highlight.speakerName}</span>
-                    <button
-                      className="time-affordance-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSeek(highlight.timestampSeconds);
-                      }}
-                    >
-                      {formatSeconds(highlight.timestampSeconds)}
-                    </button>
+              {meeting.highlights.map((highlight) => {
+                const hlTime = (meeting.audioUrl && highlight.demoTimestampSeconds !== undefined) ? highlight.demoTimestampSeconds : highlight.timestampSeconds;
+                return (
+                  <div
+                    key={highlight.id}
+                    className="editorial-highlight-row"
+                    onClick={() => onPlayFromHere(hlTime)}
+                    title="Click to seek and play excerpt"
+                  >
+                    <blockquote className="highlight-quote-text">
+                      "{highlight.excerpt}"
+                    </blockquote>
+                    <div className="highlight-meta-row">
+                      <span className="highlight-speaker">{highlight.speakerName}</span>
+                      <button
+                        className="time-affordance-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSeek(hlTime);
+                        }}
+                      >
+                        {formatSeconds(hlTime)}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

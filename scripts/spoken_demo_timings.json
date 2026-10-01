@@ -1,0 +1,89 @@
+{
+  "audioFile": "public/audio/q4-core-architecture.wav",
+  "totalDurationSeconds": 184.78,
+  "formattedDuration": "03:04",
+  "fileSizeBytes": 8149046,
+  "turns": [
+    {
+      "id": "turn-1",
+      "speaker": "Pravalika Reddy",
+      "voice": "Microsoft Zira Desktop",
+      "startTimeSeconds": 1.5,
+      "endTimeSeconds": 18.4,
+      "durationSeconds": 16.9,
+      "text": "Thanks everyone for joining the Q4 core architecture sync. Today we need a definitive decision on our distributed caching layer. Our current Memcached cluster is hitting hot-shard limits during morning spikes."
+    },
+    {
+      "id": "turn-2",
+      "speaker": "Marcus Vance",
+      "voice": "Microsoft David Desktop",
+      "startTimeSeconds": 26.9,
+      "endTimeSeconds": 50.53,
+      "durationSeconds": 23.63,
+      "text": "The primary issue is p99 latency climbing past 450 milliseconds whenever three enterprise clients sync their calendar indexes simultaneously. I evaluated two proposals: upgrading our Memcached topology with consistent hashing, versus migrating to a multi-node Redis cluster with active read replicas."
+    },
+    {
+      "id": "turn-3",
+      "speaker": "Dave Kowalski",
+      "voice": "Microsoft David Desktop",
+      "startTimeSeconds": 60.03,
+      "endTimeSeconds": 81.31,
+      "durationSeconds": 21.28,
+      "text": "From an SRE perspective, operating standalone Memcached instances across three AWS availability zones has caused intermittent split-brain scenarios when VPC peering drops. Redis 7 with failover automation would reduce our on-call risk significantly."
+    },
+    {
+      "id": "turn-4",
+      "speaker": "Pravalika Reddy",
+      "voice": "Microsoft Zira Desktop",
+      "startTimeSeconds": 89.81,
+      "endTimeSeconds": 97.75,
+      "durationSeconds": 7.94,
+      "text": "Given the reliability concerns, I'm leaning toward Redis 7 with Raft consensus for the session tier."
+    },
+    {
+      "id": "turn-5",
+      "speaker": "Sarah Lin",
+      "voice": "Microsoft Hazel Desktop",
+      "startTimeSeconds": 105.25,
+      "endTimeSeconds": 114.71,
+      "durationSeconds": 9.46,
+      "text": "I agree, but we need to make sure the migration doesn't introduce data consistency problems during the transition."
+    },
+    {
+      "id": "turn-6",
+      "speaker": "Marcus Vance",
+      "voice": "Microsoft David Desktop",
+      "startTimeSeconds": 122.21,
+      "endTimeSeconds": 129.5,
+      "durationSeconds": 7.29,
+      "text": "Then we should explicitly reject write-behind caching and use dual-write shadow traffic during the migration."
+    },
+    {
+      "id": "turn-7",
+      "speaker": "Pravalika Reddy",
+      "voice": "Microsoft Zira Desktop",
+      "startTimeSeconds": 137.5,
+      "endTimeSeconds": 147.73,
+      "durationSeconds": 10.24,
+      "text": "Agreed. We'll start with a 10 percent canary, monitor the failover benchmarks, and expand over two sprints."
+    },
+    {
+      "id": "turn-8",
+      "speaker": "Dave Kowalski",
+      "voice": "Microsoft David Desktop",
+      "startTimeSeconds": 155.23,
+      "endTimeSeconds": 162.72,
+      "durationSeconds": 7.49,
+      "text": "That gives SRE a clear rollback path and removes the current single-cluster failure concern."
+    },
+    {
+      "id": "turn-9",
+      "speaker": "Pravalika Reddy",
+      "voice": "Microsoft Zira Desktop",
+      "startTimeSeconds": 170.72,
+      "endTimeSeconds": 180.78,
+      "durationSeconds": 10.06,
+      "text": "Let's record the decision: Redis 7 cluster migration, no write-behind caching, and a phased dual-write rollout."
+    }
+  ]
+}

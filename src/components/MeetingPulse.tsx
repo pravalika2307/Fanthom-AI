@@ -47,7 +47,9 @@ export const MeetingPulse: React.FC<MeetingPulseProps> = ({
     // Sum words in segments overlapping this bin
     let wordsInBin = 0;
     meeting.transcript.forEach((segment) => {
-      if (segment.startTime < binEnd && segment.endTime > binStart) {
+      const segStart = (meeting.audioUrl && segment.demoStartTime !== undefined) ? segment.demoStartTime : segment.startTime;
+      const segEnd = (meeting.audioUrl && segment.demoEndTime !== undefined) ? segment.demoEndTime : segment.endTime;
+      if (segStart < binEnd && segEnd > binStart) {
         const words = segment.text.split(/\s+/).length;
         wordsInBin += words;
       }
@@ -60,46 +62,58 @@ export const MeetingPulse: React.FC<MeetingPulseProps> = ({
 
   // 2. Compile real event markers from seeded data
   const markers: PulseMarker[] = [
-    ...meeting.decisions.map((d) => ({
-      id: `dec-${d.id}`,
-      type: 'decision' as const,
-      title: d.title,
-      time: d.timestampSeconds,
-      symbol: '◆',
-      colorVar: 'var(--accent-emerald)',
-      label: 'Decision',
-    })),
+    ...meeting.decisions.map((d) => {
+      const dTime = (meeting.audioUrl && d.demoTimestampSeconds !== undefined) ? d.demoTimestampSeconds : d.timestampSeconds;
+      return {
+        id: `dec-${d.id}`,
+        type: 'decision' as const,
+        title: d.title,
+        time: dTime,
+        symbol: '◆',
+        colorVar: 'var(--accent-emerald)',
+        label: 'Decision',
+      };
+    }),
     ...meeting.actionItems
-      .filter((a) => a.timestampSeconds && a.timestampSeconds > 0)
-      .map((a) => ({
-        id: `act-${a.id}`,
-        type: 'action' as const,
-        title: a.description,
-        time: a.timestampSeconds!,
-        symbol: '□',
-        colorVar: 'var(--accent-amber)',
-        label: 'Action',
-      })),
-    ...meeting.highlights.map((h) => ({
-      id: `hl-${h.id}`,
-      type: 'highlight' as const,
-      title: h.title,
-      time: h.timestampSeconds,
-      symbol: '●',
-      colorVar: 'var(--accent-cyan)',
-      label: 'Highlight',
-    })),
+      .filter((a) => (a.demoTimestampSeconds !== undefined && a.demoTimestampSeconds > 0) || (a.timestampSeconds && a.timestampSeconds > 0))
+      .map((a) => {
+        const aTime = (meeting.audioUrl && a.demoTimestampSeconds !== undefined) ? a.demoTimestampSeconds : a.timestampSeconds!;
+        return {
+          id: `act-${a.id}`,
+          type: 'action' as const,
+          title: a.description,
+          time: aTime,
+          symbol: '□',
+          colorVar: 'var(--accent-amber)',
+          label: 'Action',
+        };
+      }),
+    ...meeting.highlights.map((h) => {
+      const hTime = (meeting.audioUrl && h.demoTimestampSeconds !== undefined) ? h.demoTimestampSeconds : h.timestampSeconds;
+      return {
+        id: `hl-${h.id}`,
+        type: 'highlight' as const,
+        title: h.title,
+        time: hTime,
+        symbol: '●',
+        colorVar: 'var(--accent-cyan)',
+        label: 'Highlight',
+      };
+    }),
     ...meeting.transcript
       .filter((t) => t.sentiment === 'concern')
-      .map((t) => ({
-        id: `con-${t.id}`,
-        type: 'concern' as const,
-        title: t.text.slice(0, 65) + '...',
-        time: t.startTime,
-        symbol: '▲',
-        colorVar: '#f87171',
-        label: 'Concern',
-      })),
+      .map((t) => {
+        const tTime = (meeting.audioUrl && t.demoStartTime !== undefined) ? t.demoStartTime : t.startTime;
+        return {
+          id: `con-${t.id}`,
+          type: 'concern' as const,
+          title: t.text.slice(0, 65) + '...',
+          time: tTime,
+          symbol: '▲',
+          colorVar: '#f87171',
+          label: 'Concern',
+        };
+      }),
   ].sort((a, b) => a.time - b.time);
 
   // 3. Compute speaker participation breakdown
@@ -108,7 +122,9 @@ export const MeetingPulse: React.FC<MeetingPulseProps> = ({
 
   meeting.transcript.forEach((seg) => {
     const existing = speakerMap.get(seg.speakerName) || { seconds: 0, turns: 0 };
-    const segDur = Math.max(1, seg.endTime - seg.startTime);
+    const segStart = (meeting.audioUrl && seg.demoStartTime !== undefined) ? seg.demoStartTime : seg.startTime;
+    const segEnd = (meeting.audioUrl && seg.demoEndTime !== undefined) ? seg.demoEndTime : seg.endTime;
+    const segDur = Math.max(1, segEnd - segStart);
     speakerMap.set(seg.speakerName, {
       seconds: existing.seconds + segDur,
       turns: existing.turns + 1,

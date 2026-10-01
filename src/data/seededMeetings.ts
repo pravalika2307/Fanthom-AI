@@ -10,7 +10,7 @@ export const seededMeetings: Meeting[] = [
     status: 'completed',
     location: 'Zoom (Room Alpha)',
     audioUrl: '/audio/q4-core-architecture.wav',
-    audioDurationSeconds: 495,
+    audioDurationSeconds: 185,
     preview: 'Agreed to adopt Redis Cluster with Raft consensus for the session tier; rejected write-behind caching due to data loss risk.',
     participants: [
       { id: 'u1', name: 'Pravalika Palle', email: 'pravalika@fanthom.ai', role: 'Staff Systems Architect', avatarColor: '#3b82f6', isHost: true },
@@ -29,7 +29,9 @@ export const seededMeetings: Meeting[] = [
         speakerName: 'Pravalika Palle',
         startTime: 0,
         endTime: 24,
-        text: "Thanks everyone for dialing into the Q4 core architecture sync. Today we need a definitive decision on our distributed caching tier. Our current Memcached cluster is hitting hot-shard limits during morning spikes.",
+        demoStartTime: 1.5,
+        demoEndTime: 18.4,
+        text: "Thanks everyone for joining the Q4 core architecture sync. Today we need a definitive decision on our distributed caching layer. Our current Memcached cluster is hitting hot-shard limits during morning spikes.",
         sentiment: 'neutral'
       },
       {
@@ -38,7 +40,9 @@ export const seededMeetings: Meeting[] = [
         speakerName: 'Marcus Vance',
         startTime: 25,
         endTime: 62,
-        text: "Right. The primary issue is p99 latency climbing past 450 milliseconds whenever three enterprise clients sync their calendar indexes simultaneously. I evaluated two proposals: upgrading our Memcached topology with consistent hashing, versus migrating to a multi-node Redis cluster with active read-replicas.",
+        demoStartTime: 26.9,
+        demoEndTime: 50.5,
+        text: "The primary issue is p99 latency climbing past 450 milliseconds whenever three enterprise clients sync their calendar indexes simultaneously. I evaluated two proposals: upgrading our Memcached topology with consistent hashing, versus migrating to a multi-node Redis cluster with active read-replicas.",
         sentiment: 'neutral'
       },
       {
@@ -47,6 +51,8 @@ export const seededMeetings: Meeting[] = [
         speakerName: 'Dave Kowalski',
         startTime: 63,
         endTime: 104,
+        demoStartTime: 60.0,
+        demoEndTime: 81.3,
         text: "From an SRE perspective, operating standalone Memcached instances across three AWS availability zones has caused intermittent split-brain scenarios when VPC peering drops. Redis 7 with failover automation would cut our on-call pages by at least forty percent.",
         sentiment: 'positive',
         highlighted: true,
@@ -67,7 +73,9 @@ export const seededMeetings: Meeting[] = [
         speakerName: 'Pravalika Palle',
         startTime: 143,
         endTime: 185,
-        text: "Good call, Tom. The architecture RFC mandates mutual TLS on port 6380 with automated Let's Encrypt certificate rotation via HashiCorp Vault. In addition, sensitive meeting tokens will be encrypted at the application layer with AES-256-GCM before touching the cache.",
+        demoStartTime: 89.8,
+        demoEndTime: 97.8,
+        text: "Given the reliability concerns, I'm leaning toward Redis 7 with Raft consensus for the session tier. The architecture RFC mandates mutual TLS on port 6380 with automated Let's Encrypt certificate rotation via HashiCorp Vault.",
         sentiment: 'positive'
       },
       {
@@ -80,24 +88,28 @@ export const seededMeetings: Meeting[] = [
         sentiment: 'concern'
       },
       {
-        id: 't7',
-        speakerId: 'u2',
-        speakerName: 'Marcus Vance',
-        startTime: 231,
-        endTime: 275,
-        text: "That is why I recommend strictly write-through caching with dual-write to PostgreSQL, backed by a Kafka dead-letter queue for retries. If the cache invalidation event fails, the replica automatically flags the key as expired.",
-        sentiment: 'positive',
-        highlighted: true,
-        highlightTag: 'Data Integrity'
-      },
-      {
         id: 't8',
         speakerId: 'u3',
         speakerName: 'Sarah Lin',
         startTime: 276,
         endTime: 318,
-        text: "What does the migration path look like for live users? Can we do a zero-downtime blue-green cutover, or will we need a scheduled maintenance window over a weekend?",
+        demoStartTime: 105.2,
+        demoEndTime: 114.7,
+        text: "I agree, but we need to make sure the migration doesn't introduce data consistency problems during the transition. Can we do a zero-downtime blue-green cutover, or will we need a scheduled maintenance window over a weekend?",
         sentiment: 'neutral'
+      },
+      {
+        id: 't7',
+        speakerId: 'u2',
+        speakerName: 'Marcus Vance',
+        startTime: 231,
+        endTime: 275,
+        demoStartTime: 122.2,
+        demoEndTime: 129.5,
+        text: "Then we should explicitly reject write-behind caching and use dual-write shadow traffic during the migration, backed by a Kafka dead-letter queue for retries.",
+        sentiment: 'positive',
+        highlighted: true,
+        highlightTag: 'Data Integrity'
       },
       {
         id: 't9',
@@ -105,7 +117,9 @@ export const seededMeetings: Meeting[] = [
         speakerName: 'Pravalika Palle',
         startTime: 319,
         endTime: 368,
-        text: "We can do a full shadow-read and dual-write rollout over two sprints. In sprint 1, we deploy Redis in shadow mode and compare cache hits against Memcached. In sprint 2, we shift 10% of tenant traffic, monitor p99 metrics, and ramp up to 100% without any user downtime.",
+        demoStartTime: 137.5,
+        demoEndTime: 147.7,
+        text: "Agreed. We'll start with a 10 percent canary, monitor the failover benchmarks, and expand over two sprints without any user downtime.",
         sentiment: 'positive',
         highlighted: true,
         highlightTag: 'Rollout Plan'
@@ -121,11 +135,13 @@ export const seededMeetings: Meeting[] = [
       },
       {
         id: 't11',
-        speakerId: 'u6',
-        speakerName: 'James Thornton',
+        speakerId: 'u4',
+        speakerName: 'Dave Kowalski',
         startTime: 406,
         endTime: 448,
-        text: "On the frontend, if cache responses drop to under 50ms, we can remove the optimistic retry debouncing in the meeting player, which immediately simplifies the state machine in React.",
+        demoStartTime: 155.2,
+        demoEndTime: 162.7,
+        text: "That gives SRE a clear rollback path and removes the current single-cluster failure concern.",
         sentiment: 'positive'
       },
       {
@@ -134,7 +150,9 @@ export const seededMeetings: Meeting[] = [
         speakerName: 'Pravalika Palle',
         startTime: 449,
         endTime: 495,
-        text: "Sounds like we have clear consensus. Decision: We approve RFC-204 for the Redis Cluster with mutual TLS and write-through invalidation. Marcus will lead the backend implementation, Dave handles the Terraform infra, and Tom reviews security certificates.",
+        demoStartTime: 170.7,
+        demoEndTime: 180.8,
+        text: "Let's record the decision: Redis 7 cluster migration, no write-behind caching, and a phased dual-write rollout. Marcus will lead backend implementation, Dave handles Terraform infra, and Tom reviews security certificates.",
         sentiment: 'positive'
       }
     ],
@@ -254,6 +272,7 @@ export const seededMeetings: Meeting[] = [
         dueDate: 'Oct 3, 2026',
         completed: false,
         timestampSeconds: 231,
+        demoTimestampSeconds: 122,
         meetingId: 'meeting-arch-q4'
       },
       {
@@ -264,6 +283,7 @@ export const seededMeetings: Meeting[] = [
         dueDate: 'Oct 6, 2026',
         completed: false,
         timestampSeconds: 63,
+        demoTimestampSeconds: 60,
         meetingId: 'meeting-arch-q4'
       },
       {
@@ -274,16 +294,18 @@ export const seededMeetings: Meeting[] = [
         dueDate: 'Oct 5, 2026',
         completed: true,
         timestampSeconds: 143,
+        demoTimestampSeconds: 90,
         meetingId: 'meeting-arch-q4'
       },
       {
         id: 'act-4',
-        description: 'Simplify web client playback state machine once latency drops under 50ms',
-        assigneeId: 'u6',
-        assigneeName: 'James Thornton',
+        description: 'Begin 10% canary rollout and monitor failover benchmarks over two sprints',
+        assigneeId: 'u1',
+        assigneeName: 'Pravalika Palle',
         dueDate: 'Oct 14, 2026',
         completed: false,
-        timestampSeconds: 406,
+        timestampSeconds: 319,
+        demoTimestampSeconds: 138,
         meetingId: 'meeting-arch-q4'
       }
     ],
@@ -293,6 +315,7 @@ export const seededMeetings: Meeting[] = [
         title: 'Approve RFC-204: Redis 7 Cluster Migration',
         description: 'Replace Memcached with multi-node Redis cluster with automatic failover to eliminate hot-sharding bottlenecks.',
         timestampSeconds: 449,
+        demoTimestampSeconds: 171,
         decidedBy: 'Pravalika Palle & Sarah Lin',
         category: 'architecture'
       },
@@ -301,6 +324,7 @@ export const seededMeetings: Meeting[] = [
         title: 'Mandate Write-Through Invalidation Policy',
         description: 'Rejected write-behind caching to eliminate GDPR deletion latency risks and protect data consistency.',
         timestampSeconds: 231,
+        demoTimestampSeconds: 122,
         decidedBy: 'Marcus Vance & Elena Rostova',
         category: 'architecture'
       },
@@ -309,6 +333,7 @@ export const seededMeetings: Meeting[] = [
         title: 'Enforce Dual-Write Shadow Rollout Strategy',
         description: 'Deploy shadow reads and phased 10% canary traffic ramp over two sprints without user-facing maintenance windows.',
         timestampSeconds: 319,
+        demoTimestampSeconds: 138,
         decidedBy: 'Pravalika Palle',
         category: 'timeline'
       }
@@ -320,27 +345,30 @@ export const seededMeetings: Meeting[] = [
         excerpt: 'Redis 7 with failover automation would cut our on-call pages by at least forty percent.',
         speakerName: 'Dave Kowalski',
         timestampSeconds: 63,
-        durationSeconds: 41,
+        demoTimestampSeconds: 60,
+        durationSeconds: 21,
         category: 'breakthrough',
         shareUrl: 'https://fanthom.ai/m/meeting-arch-q4?t=63'
       },
       {
         id: 'hl-2',
         title: 'Write-Through vs Write-Behind Decision',
-        excerpt: 'I recommend strictly write-through caching with dual-write to PostgreSQL, backed by a Kafka dead-letter queue.',
+        excerpt: 'Then we should explicitly reject write-behind caching and use dual-write shadow traffic during the migration.',
         speakerName: 'Marcus Vance',
         timestampSeconds: 231,
-        durationSeconds: 44,
+        demoTimestampSeconds: 122,
+        durationSeconds: 8,
         category: 'decision',
         shareUrl: 'https://fanthom.ai/m/meeting-arch-q4?t=231'
       },
       {
         id: 'hl-3',
         title: 'Zero Downtime Shadow Deployment',
-        excerpt: 'We can do a full shadow-read and dual-write rollout over two sprints without any user downtime.',
+        excerpt: 'Agreed. We\'ll start with a 10 percent canary, monitor the failover benchmarks, and expand over two sprints.',
         speakerName: 'Pravalika Palle',
         timestampSeconds: 319,
-        durationSeconds: 49,
+        demoTimestampSeconds: 138,
+        durationSeconds: 10,
         category: 'decision',
         shareUrl: 'https://fanthom.ai/m/meeting-arch-q4?t=319'
       }

@@ -129,8 +129,15 @@ export const App: React.FC = () => {
         if (timeParam !== null) {
           const parsedTime = parseInt(timeParam, 10);
           if (!isNaN(parsedTime)) {
-            targetTime = parsedTime;
-            setPlaybackTime(parsedTime);
+            let mappedTime = parsedTime;
+            if (targetMeeting?.audioUrl && parsedTime > (targetMeeting.audioDurationSeconds || 185)) {
+              const seg = targetMeeting.transcript.find(
+                (s) => s.startTime === parsedTime || (parsedTime >= s.startTime && parsedTime <= s.endTime)
+              );
+              if (seg?.demoStartTime !== undefined) mappedTime = seg.demoStartTime;
+            }
+            targetTime = mappedTime;
+            setPlaybackTime(mappedTime);
           }
         }
 
@@ -230,7 +237,24 @@ export const App: React.FC = () => {
   }, [isPlaying, playbackSpeed, totalDurationSeconds, activeMeeting.audioUrl]);
 
   const handleSeek = (newTime: number) => {
-    const clamped = Math.max(0, Math.min(totalDurationSeconds, newTime));
+    let targetTime = newTime;
+    if (activeMeeting.audioUrl && newTime > totalDurationSeconds) {
+      const matchedSeg = activeMeeting.transcript.find(
+        (s) => s.startTime === newTime || (newTime >= s.startTime && newTime <= s.endTime)
+      );
+      if (matchedSeg?.demoStartTime !== undefined) {
+        targetTime = matchedSeg.demoStartTime;
+      } else {
+        const dMatch = activeMeeting.decisions.find((d) => d.timestampSeconds === newTime);
+        if (dMatch?.demoTimestampSeconds !== undefined) targetTime = dMatch.demoTimestampSeconds;
+        const aMatch = activeMeeting.actionItems.find((a) => a.timestampSeconds === newTime);
+        if (aMatch?.demoTimestampSeconds !== undefined) targetTime = aMatch.demoTimestampSeconds;
+        const hMatch = activeMeeting.highlights.find((h) => h.timestampSeconds === newTime);
+        if (hMatch?.demoTimestampSeconds !== undefined) targetTime = hMatch.demoTimestampSeconds;
+      }
+    }
+
+    const clamped = Math.max(0, Math.min(totalDurationSeconds, targetTime));
     setPlaybackTime(clamped);
     const audio = audioRef.current;
     if (audio && activeMeeting.audioUrl) {
@@ -240,11 +264,20 @@ export const App: React.FC = () => {
   };
 
   const handlePlayFromHere = (sec: number) => {
-    handleSeek(sec);
+    let targetTime = sec;
+    if (activeMeeting.audioUrl && sec > totalDurationSeconds) {
+      const matchedSeg = activeMeeting.transcript.find(
+        (s) => s.startTime === sec || (sec >= s.startTime && sec <= s.endTime)
+      );
+      if (matchedSeg?.demoStartTime !== undefined) {
+        targetTime = matchedSeg.demoStartTime;
+      }
+    }
+    handleSeek(targetTime);
     setIsPlaying(true);
     const audio = audioRef.current;
     if (audio && activeMeeting.audioUrl) {
-      audio.currentTime = sec;
+      audio.currentTime = targetTime;
       audio.play().catch((err) => console.warn('Audio play error:', err));
     }
   };
@@ -294,9 +327,31 @@ export const App: React.FC = () => {
   }, [totalDurationSeconds, playbackTime, isPlaying, activeMeeting.audioUrl]);
 
   // Determine current active speaker
-  const currentSegment = activeMeeting?.transcript.find(
-    (seg) => playbackTime >= seg.startTime && playbackTime <= seg.endTime
-  );
+  const currentSegment = useMemo(() => {
+    if (!activeMeeting) return undefined;
+    if (activeMeeting.audioUrl) {
+      // 1. Direct window match within turn's spoken boundaries
+      const exact = activeMeeting.transcript.find(
+        (seg) =>
+          seg.demoStartTime !== undefined &&
+          seg.demoEndTime !== undefined &&
+          playbackTime >= seg.demoStartTime &&
+          playbackTime <= seg.demoEndTime
+      );
+      if (exact) return exact;
+
+      // 2. If playback is in a brief pause between turns, find the most recent spoken turn
+      const activeTurns = activeMeeting.transcript
+        .filter((seg) => seg.demoStartTime !== undefined && seg.demoStartTime <= playbackTime)
+        .sort((a, b) => (b.demoStartTime ?? 0) - (a.demoStartTime ?? 0));
+      if (activeTurns.length > 0) {
+        return activeTurns[0];
+      }
+    }
+    return activeMeeting.transcript.find(
+      (seg) => playbackTime >= seg.startTime && playbackTime <= seg.endTime
+    );
+  }, [activeMeeting, playbackTime]);
 
   const currentSpeakerParticipant = activeMeeting?.participants.find(
     (p) => p.name === currentSegment?.speakerName || p.id === currentSegment?.speakerId
@@ -327,14 +382,22 @@ export const App: React.FC = () => {
   ) => {
     setSelectedMeetingId(meetingId);
     setCurrentView('workspace');
-    setPlaybackTime(timestamp);
+    const targetMeeting = meetings.find((m) => m.id === meetingId);
+    let mappedTime = timestamp;
+    if (targetMeeting?.audioUrl && timestamp > (targetMeeting.audioDurationSeconds || 185)) {
+      const seg = targetMeeting.transcript.find(
+        (s) => s.startTime === timestamp || (timestamp >= s.startTime && timestamp <= s.endTime)
+      );
+      if (seg?.demoStartTime !== undefined) mappedTime = seg.demoStartTime;
+    }
+    setPlaybackTime(mappedTime);
+    handleSeek(mappedTime);
     setHighlightQuery(matchTerm);
 
-    const targetMeeting = meetings.find((m) => m.id === meetingId);
-    window.location.hash = `#meeting=${meetingId}&t=${timestamp}&q=${encodeURIComponent(matchTerm)}`;
+    window.location.hash = `#meeting=${meetingId}&t=${Math.round(mappedTime)}&q=${encodeURIComponent(matchTerm)}`;
 
     showToast(
-      `Jumped to "${targetMeeting?.title || 'Meeting'}" at ${formatSeconds(timestamp)}`
+      `Jumped to "${targetMeeting?.title || 'Meeting'}" at ${formatSeconds(mappedTime)}`
     );
   };
 
@@ -367,14 +430,22 @@ export const App: React.FC = () => {
   const handleOpenSourceMeeting = (meetingId: string, timestamp: number) => {
     setSelectedMeetingId(meetingId);
     setCurrentView('workspace');
-    setPlaybackTime(timestamp);
+    const targetMeeting = meetings.find((m) => m.id === meetingId);
+    let mappedTime = timestamp;
+    if (targetMeeting?.audioUrl && timestamp > (targetMeeting.audioDurationSeconds || 185)) {
+      const seg = targetMeeting.transcript.find(
+        (s) => s.startTime === timestamp || (timestamp >= s.startTime && timestamp <= s.endTime)
+      );
+      if (seg?.demoStartTime !== undefined) mappedTime = seg.demoStartTime;
+    }
+    setPlaybackTime(mappedTime);
+    handleSeek(mappedTime);
     setHighlightQuery('');
     setSharedMomentInfo(null);
-    window.location.hash = `#meeting=${meetingId}&t=${timestamp}`;
+    window.location.hash = `#meeting=${meetingId}&t=${Math.round(mappedTime)}`;
 
-    const targetMeeting = meetings.find((m) => m.id === meetingId);
     showToast(
-      `Jumped to source: "${targetMeeting?.title || 'Meeting'}" at ${formatSeconds(timestamp)}`
+      `Jumped to source: "${targetMeeting?.title || 'Meeting'}" at ${formatSeconds(mappedTime)}`
     );
   };
 

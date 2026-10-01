@@ -21,6 +21,8 @@ export interface TranscriptSegment {
   highlighted?: boolean;
   highlightTag?: string;
   sentiment?: 'positive' | 'neutral' | 'concern';
+  demoStartTime?: number;
+  demoEndTime?: number;
 }
 
 export interface ActionItem {
@@ -31,6 +33,7 @@ export interface ActionItem {
   dueDate: string;
   completed: boolean;
   timestampSeconds?: number;
+  demoTimestampSeconds?: number;
   meetingId: string;
 }
 
@@ -39,6 +42,7 @@ export interface Decision {
   title: string;
   description: string;
   timestampSeconds: number;
+  demoTimestampSeconds?: number;
   decidedBy: string;
   category: 'architecture' | 'pricing' | 'process' | 'timeline' | 'product';
 }
@@ -49,6 +53,7 @@ export interface Highlight {
   excerpt: string;
   speakerName: string;
   timestampSeconds: number;
+  demoTimestampSeconds?: number;
   durationSeconds: number;
   category: 'objection' | 'decision' | 'breakthrough' | 'feedback' | 'quote';
   shareUrl?: string;

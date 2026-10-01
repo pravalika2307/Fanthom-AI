@@ -78,9 +78,21 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   participants.forEach((p) => participantMap.set(p.id, p));
 
   // Determine active segment based on currentTime
-  const activeSegment = transcript.find(
-    (seg) => currentTime >= seg.startTime && currentTime <= seg.endTime
-  );
+  const hasDemoAudio = transcript.some((t) => t.demoStartTime !== undefined);
+  const activeSegment = hasDemoAudio
+    ? (transcript.find(
+        (seg) =>
+          seg.demoStartTime !== undefined &&
+          seg.demoEndTime !== undefined &&
+          currentTime >= seg.demoStartTime &&
+          currentTime <= seg.demoEndTime
+      ) ||
+      transcript
+        .filter((seg) => seg.demoStartTime !== undefined && seg.demoStartTime <= currentTime)
+        .sort((a, b) => (b.demoStartTime ?? 0) - (a.demoStartTime ?? 0))[0])
+    : transcript.find(
+        (seg) => currentTime >= seg.startTime && currentTime <= seg.endTime
+      );
 
   // Filter segments if search query or speaker filter is present
   const filteredSegments = transcript.filter((seg) => {
@@ -373,84 +385,97 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
               >
                 {/* Speaker Left Meta Row */}
                 <header className="editorial-turn-meta">
-                  <button
-                    className="editorial-turn-timestamp"
-                    onClick={() => onSeek(segment.startTime)}
-                    title={`Jump playback to ${formatSeconds(segment.startTime)}`}
-                  >
-                    {formatSeconds(segment.startTime)}
-                  </button>
+                  {(() => {
+                    const jumpTime = (segment.demoStartTime !== undefined && hasDemoAudio)
+                      ? segment.demoStartTime
+                      : segment.startTime;
+                    const displayTime = (segment.demoStartTime !== undefined && hasDemoAudio)
+                      ? segment.demoStartTime
+                      : segment.startTime;
 
-                  <span className="editorial-turn-speaker">{segment.speakerName}</span>
+                    return (
+                      <>
+                        <button
+                          className="editorial-turn-timestamp"
+                          onClick={() => onSeek(jumpTime)}
+                          title={`Jump playback to ${formatSeconds(jumpTime)}`}
+                        >
+                          {formatSeconds(displayTime)}
+                        </button>
 
-                  {/* Contextual Action Bar — Quiet Inline Links on Hover */}
-                  <div className="editorial-turn-actions">
-                    <button
-                      className="turn-action-link"
-                      onClick={() => onPlayFromHere(segment.startTime)}
-                      title="Play from this moment"
-                    >
-                      <Play size={10} />
-                      <span>Play</span>
-                    </button>
-                    <span className="action-sep">·</span>
-                    <button
-                      className="turn-action-link"
-                      onClick={() =>
-                        onRequestActionModal(
-                          segment.text,
-                          segment.speakerName,
-                          segment.startTime
-                        )
-                      }
-                      title="Create Action Item from this turn"
-                    >
-                      <CheckSquare size={10} />
-                      <span>Action</span>
-                    </button>
-                    <span className="action-sep">·</span>
-                    <button
-                      className="turn-action-link"
-                      onClick={() =>
-                        onSaveHighlight(
-                          segment.text,
-                          segment.speakerName,
-                          segment.startTime,
-                          segment.id
-                        )
-                      }
-                      title="Save as highlight"
-                    >
-                      <Bookmark size={10} />
-                      <span>Highlight</span>
-                    </button>
-                    <span className="action-sep">·</span>
-                    <button
-                      className="turn-action-link"
-                      onClick={() =>
-                        onCopyQuote(segment.text, segment.speakerName, segment.startTime)
-                      }
-                      title="Copy quote with attribution"
-                    >
-                      <Copy size={10} />
-                      <span>Copy</span>
-                    </button>
-                    <span className="action-sep">·</span>
-                    <button
-                      className="turn-action-link"
-                      onClick={() =>
-                        onRequestShareModal(
-                          segment.text,
-                          segment.speakerName,
-                          segment.startTime
-                        )
-                      }
-                      title="Share this moment with a deep link"
-                    >
-                      <Share2 size={10} />
-                      <span>Share</span>
-                    </button>
-                  </div>
+                        <span className="editorial-turn-speaker">{segment.speakerName}</span>
+
+                        {/* Contextual Action Bar — Quiet Inline Links on Hover */}
+                        <div className="editorial-turn-actions">
+                          <button
+                            className="turn-action-link"
+                            onClick={() => onPlayFromHere(jumpTime)}
+                            title="Play from this moment"
+                          >
+                            <Play size={10} />
+                            <span>Play</span>
+                          </button>
+                          <span className="action-sep">·</span>
+                          <button
+                            className="turn-action-link"
+                            onClick={() =>
+                              onRequestActionModal(
+                                segment.text,
+                                segment.speakerName,
+                                jumpTime
+                              )
+                            }
+                            title="Create Action Item from this turn"
+                          >
+                            <CheckSquare size={10} />
+                            <span>Action</span>
+                          </button>
+                          <span className="action-sep">·</span>
+                          <button
+                            className="turn-action-link"
+                            onClick={() =>
+                              onSaveHighlight(
+                                segment.text,
+                                segment.speakerName,
+                                jumpTime,
+                                segment.id
+                              )
+                            }
+                            title="Save as highlight"
+                          >
+                            <Bookmark size={10} />
+                            <span>Highlight</span>
+                          </button>
+                          <span className="action-sep">·</span>
+                          <button
+                            className="turn-action-link"
+                            onClick={() =>
+                              onCopyQuote(segment.text, segment.speakerName, jumpTime)
+                            }
+                            title="Copy quote with attribution"
+                          >
+                            <Copy size={10} />
+                            <span>Copy</span>
+                          </button>
+                          <span className="action-sep">·</span>
+                          <button
+                            className="turn-action-link"
+                            onClick={() =>
+                              onRequestShareModal(
+                                segment.text,
+                                segment.speakerName,
+                                jumpTime
+                              )
+                            }
+                            title="Share this moment with a deep link"
+                          >
+                            <Share2 size={10} />
+                            <span>Share</span>
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </header>
 
                 {/* Speech Dialogue Body */}
