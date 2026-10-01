@@ -1,7 +1,7 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { formatSeconds } from '../utils/formatters';
 import { Play, Pause, RotateCcw, RotateCw, Volume2, Volume1, VolumeX } from 'lucide-react';
-import { Decision, Highlight, ActionItem } from '../types';
+import { Decision, Highlight, ActionItem, TranscriptSegment } from '../types';
 
 interface PlayerBarProps {
   currentTime: number;
@@ -20,6 +20,7 @@ interface PlayerBarProps {
   decisions: Decision[];
   highlights: Highlight[];
   actionItems?: ActionItem[];
+  transcript?: TranscriptSegment[];
   hasAudio?: boolean;
 }
 
@@ -39,6 +40,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
   decisions,
   highlights,
   actionItems = [],
+  transcript = [],
   hasAudio = true,
 }) => {
   const scrubberRef = useRef<HTMLDivElement>(null);
@@ -50,6 +52,49 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
     color: string;
     posPct: number;
   } | null>(null);
+
+  // Compute 72 audio waveform density bars across the meeting timeline
+  const waveformBars = useMemo(() => {
+    const BAR_COUNT = 72;
+    const bars: { heightPct: number; isDecisionNear: boolean; isHighlightNear: boolean }[] = [];
+    if (totalDurationSeconds <= 0) return bars;
+
+    const sliceDuration = totalDurationSeconds / BAR_COUNT;
+
+    for (let i = 0; i < BAR_COUNT; i++) {
+      const sliceStart = i * sliceDuration;
+      const sliceEnd = (i + 1) * sliceDuration;
+      const sliceMid = sliceStart + sliceDuration / 2;
+
+      const overlappingTurns = transcript.filter((turn) => {
+        const turnStart = (hasAudio && turn.demoStartTime !== undefined) ? turn.demoStartTime : turn.startTime;
+        const turnEnd = (hasAudio && turn.demoEndTime !== undefined) ? turn.demoEndTime : turn.endTime;
+        return turnStart < sliceEnd && turnEnd > sliceStart;
+      });
+
+      const isDecisionNear = decisions.some((d) => {
+        const dTime = (hasAudio && d.demoTimestampSeconds !== undefined) ? d.demoTimestampSeconds : d.timestampSeconds;
+        return Math.abs(dTime - sliceMid) < sliceDuration * 1.2;
+      });
+
+      const isHighlightNear = highlights.some((h) => {
+        const hTime = (hasAudio && h.demoTimestampSeconds !== undefined) ? h.demoTimestampSeconds : h.timestampSeconds;
+        return Math.abs(hTime - sliceMid) < sliceDuration * 1.2;
+      });
+
+      let heightPct = 20;
+      if (overlappingTurns.length > 0) {
+        const wordCount = overlappingTurns.reduce((acc, t) => acc + t.text.split(/\s+/).length, 0);
+        heightPct = Math.min(95, Math.max(30, 24 + wordCount * 2.2));
+      }
+
+      if (isDecisionNear) heightPct = Math.max(heightPct, 95);
+      if (isHighlightNear) heightPct = Math.max(heightPct, 82);
+
+      bars.push({ heightPct, isDecisionNear, isHighlightNear });
+    }
+    return bars;
+  }, [totalDurationSeconds, transcript, decisions, highlights, hasAudio]);
 
   const handleScrubberClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!scrubberRef.current) return;
@@ -78,6 +123,23 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
           onClick={handleScrubberClick}
           title="Click to seek playback"
         >
+          {/* Audio Waveform Density Rhythm */}
+          <div className="waveform-bars-container" aria-hidden="true">
+            {waveformBars.map((bar, idx) => {
+              const barPosPct = (idx / (waveformBars.length - 1)) * 100;
+              const isPlayed = barPosPct <= progressPercent;
+              return (
+                <div
+                  key={idx}
+                  className={`waveform-bar ${isPlayed ? 'played' : ''} ${bar.isDecisionNear ? 'decision' : ''}`}
+                  style={{
+                    height: `${bar.heightPct}%`,
+                  }}
+                />
+              );
+            })}
+          </div>
+
           <div className="quiet-scrubber-fill" style={{ width: `${progressPercent}%` }}>
             <div className="quiet-scrubber-thumb" />
           </div>

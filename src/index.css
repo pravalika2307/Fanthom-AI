@@ -945,11 +945,48 @@ input, textarea, select {
 
 .quiet-scrubber-track {
   width: 100%;
-  height: 14px;
+  height: 20px;
   display: flex;
   align-items: center;
   position: relative;
   cursor: pointer;
+}
+
+.waveform-bars-container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.waveform-bar {
+  flex: 1;
+  min-width: 1.5px;
+  max-width: 3.5px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.14);
+  transition: height 0.15s ease, background 0.12s ease, opacity 0.12s ease;
+  opacity: 0.55;
+}
+
+.waveform-bar.played {
+  background: var(--accent-cyan, #38bdf8);
+  opacity: 0.9;
+}
+
+.waveform-bar.decision {
+  background: var(--accent-emerald, #10b981);
+}
+
+.waveform-bar.played.decision {
+  background: #34d399;
 }
 
 .quiet-scrubber-track::before {
@@ -957,8 +994,8 @@ input, textarea, select {
   position: absolute;
   left: 0;
   right: 0;
-  height: 3px;
-  background: var(--border-default);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 1px;
 }
 

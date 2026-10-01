@@ -861,6 +861,7 @@ export const App: React.FC = () => {
                 decisions={activeMeeting.decisions}
                 highlights={activeMeeting.highlights}
                 actionItems={activeMeeting.actionItems}
+                transcript={activeMeeting.transcript}
                 hasAudio={Boolean(activeMeeting.audioUrl)}
               />
 
